@@ -1,1 +1,12 @@
-Hello
+This application is coded specifically for the MSP430G2553.
+
+Features:
+  -Send strings of data over HAM Radio (RTTY over AFSK -- receiving end is a computer running MMTTY)
+  -Capture essential GPS data from SR-92 chip
+  -(TODO) Communicate with other MSP430s via XBee and Digimesh protocol
+  -(TODO) Convert MMTTY output to user-friendly/applicable GUI
+  
+Jean-Luc Duckworth
+
+
+[Created this repository after I broke working code...]
