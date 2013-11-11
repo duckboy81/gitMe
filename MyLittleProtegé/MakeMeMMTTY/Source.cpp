@@ -1,4 +1,5 @@
 //Jean-Luc Duckworth Nov 2013
+//Really trying to get git to get working
 
 
 #include<windows.h> 
