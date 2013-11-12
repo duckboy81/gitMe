@@ -1,10 +1,14 @@
-﻿Option Explicit On
+﻿'Created by Jean-Luc Duckworth
+'TODO: Set rock list font to a uniform sized font
+'TODO: Start compiling method for decoding messages from HAM radio
+'TODO: Consider whether or not to send a diddle message of LCTR when idle -- better performance?
+
+Option Explicit On
 Public Class Form1
     Private Declare Function FindWindow Lib "user32.dll" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr
     Private Declare Function FindWindowEx Lib "user32.dll" Alias "FindWindowExA" (ByVal hWndParent As IntPtr, ByVal hWndChildAfter As Integer, ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr
     Private Declare Function SendMessage Lib "user32.dll" Alias "SendMessageA" (ByVal hWnd As IntPtr, ByVal wMsg As Integer, ByVal wParam As Integer, ByVal lParam As IntPtr) As IntPtr
     Private Declare Function PostMessage Lib "user32.dll" Alias "PostMessageA" (ByVal hwnd As IntPtr, ByVal wMsg As Integer, ByVal wParam As Integer, ByVal lParam As IntPtr) As IntPtr
-    'Private Declare Function RegisterWindowMessage Lib "user32" Alias "RegisterWindowMessageA" (ByVal lpString As String) As Long
     Private Declare Function RegisterWindowMessage Lib "user32.dll" Alias "RegisterWindowMessageA" (ByVal lpString As String) As UInteger
 
     Private Class rock
@@ -73,7 +77,7 @@ Public Class Form1
 
     Dim rockList As ArrayList = New ArrayList
     Dim rockCount As Integer = 1
-    Dim numChar2ShowUpdate As Integer = 8
+    Dim numChar2ShowUpdate As Integer = 14
 
     Private Sub PaintMap(ByVal sender As Object, ByVal e As System.Windows.Forms.PaintEventArgs) Handles GroupBox2.Paint
         'Handles Me.Paint
@@ -100,22 +104,24 @@ Public Class Form1
             IgnoreDataButton.Enabled = False
             ResetButton.Enabled = False
 
-            If (ListBox1.SelectedItem.ToString.Contains(thisRock.rockName)) Then
-                statusLabel.Text = thisRock.status
-                detectionsLabel.Text = thisRock.numDetections
-                latitudeLabel.Text = thisRock.posLatitude
-                longitudeLabel.Text = thisRock.posLongitude
-                batteryLabel.Text = thisRock.batteryLevel.ToString + "%"
-                BatteryBar.Value = thisRock.batteryLevel
+            If (IsNothing(ListBox1.SelectedItem) = False) Then
+                If (ListBox1.SelectedItem.ToString.Contains(thisRock.rockName)) Then
+                    statusLabel.Text = thisRock.status
+                    detectionsLabel.Text = thisRock.numDetections
+                    latitudeLabel.Text = thisRock.posLatitude
+                    longitudeLabel.Text = thisRock.posLongitude
+                    batteryLabel.Text = thisRock.batteryLevel.ToString + "%"
+                    BatteryBar.Value = thisRock.batteryLevel
 
-                IgnoreDataButton.Text = "Ignore Data"
-                If (thisRock.dataIgnored = True) Then
-                    IgnoreDataButton.Text = "Allow Data"
+                    IgnoreDataButton.Text = "Ignore Data"
+                    If (thisRock.dataIgnored = True) Then
+                        IgnoreDataButton.Text = "Allow Data"
+                    End If
+
+                    IgnoreDataButton.Enabled = True
+                    ResetButton.Enabled = True
+                    Exit For
                 End If
-
-                IgnoreDataButton.Enabled = True
-                ResetButton.Enabled = True
-                Exit For
             End If
         Next
 
