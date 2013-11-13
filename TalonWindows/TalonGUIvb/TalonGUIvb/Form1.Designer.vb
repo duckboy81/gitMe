@@ -41,10 +41,15 @@ Partial Class Form1
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
         Me.Button1 = New System.Windows.Forms.Button()
         Me.RockListAnimationTimer = New System.Windows.Forms.Timer(Me.components)
-        Me.Button2 = New System.Windows.Forms.Button()
-        Me.MMTTY_Text = New System.Windows.Forms.RichTextBox()
+        Me.RTTYbox = New System.Windows.Forms.GroupBox()
+        Me.MMTTYBox = New System.Windows.Forms.TextBox()
+        Me.monitorBar = New System.Windows.Forms.ProgressBar()
+        Me.squelchBar = New System.Windows.Forms.TrackBar()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.Label1 = New System.Windows.Forms.Label()
         Me.GroupBox1.SuspendLayout()
-        Me.GroupBox2.SuspendLayout()
+        Me.RTTYbox.SuspendLayout()
+        CType(Me.squelchBar, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'GroupBox1
@@ -190,19 +195,18 @@ Partial Class Form1
         '
         'ListBox1
         '
-        Me.ListBox1.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!)
+        Me.ListBox1.Font = New System.Drawing.Font("Courier New", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.ListBox1.FormattingEnabled = True
-        Me.ListBox1.ItemHeight = 20
+        Me.ListBox1.ItemHeight = 18
         Me.ListBox1.Location = New System.Drawing.Point(11, 24)
         Me.ListBox1.Name = "ListBox1"
-        Me.ListBox1.Size = New System.Drawing.Size(233, 104)
+        Me.ListBox1.Size = New System.Drawing.Size(233, 94)
         Me.ListBox1.TabIndex = 0
         '
         'GroupBox2
         '
-        Me.GroupBox2.Controls.Add(Me.MMTTY_Text)
         Me.GroupBox2.Font = New System.Drawing.Font("Microsoft Sans Serif", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.GroupBox2.Location = New System.Drawing.Point(14, 153)
+        Me.GroupBox2.Location = New System.Drawing.Point(14, 158)
         Me.GroupBox2.Name = "GroupBox2"
         Me.GroupBox2.Size = New System.Drawing.Size(600, 300)
         Me.GroupBox2.TabIndex = 1
@@ -223,43 +227,97 @@ Partial Class Form1
         '
         Me.RockListAnimationTimer.Enabled = True
         '
-        'Button2
+        'RTTYbox
         '
-        Me.Button2.Font = New System.Drawing.Font("Microsoft Sans Serif", 6.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Button2.Location = New System.Drawing.Point(305, 0)
-        Me.Button2.Name = "Button2"
-        Me.Button2.Size = New System.Drawing.Size(114, 18)
-        Me.Button2.TabIndex = 3
-        Me.Button2.Text = "Start MMTTY"
-        Me.Button2.UseVisualStyleBackColor = True
+        Me.RTTYbox.Controls.Add(Me.MMTTYBox)
+        Me.RTTYbox.Controls.Add(Me.monitorBar)
+        Me.RTTYbox.Controls.Add(Me.squelchBar)
+        Me.RTTYbox.Controls.Add(Me.Label4)
+        Me.RTTYbox.Controls.Add(Me.Label1)
+        Me.RTTYbox.Font = New System.Drawing.Font("Microsoft Sans Serif", 14.25!)
+        Me.RTTYbox.Location = New System.Drawing.Point(13, 464)
+        Me.RTTYbox.Name = "RTTYbox"
+        Me.RTTYbox.Size = New System.Drawing.Size(600, 126)
+        Me.RTTYbox.TabIndex = 4
+        Me.RTTYbox.TabStop = False
+        Me.RTTYbox.Text = "RTTY Status - Offline"
         '
-        'MMTTY_Text
+        'MMTTYBox
         '
-        Me.MMTTY_Text.Location = New System.Drawing.Point(12, 77)
-        Me.MMTTY_Text.Name = "MMTTY_Text"
-        Me.MMTTY_Text.Size = New System.Drawing.Size(576, 157)
-        Me.MMTTY_Text.TabIndex = 1
-        Me.MMTTY_Text.Text = ""
+        Me.MMTTYBox.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper
+        Me.MMTTYBox.Enabled = False
+        Me.MMTTYBox.Font = New System.Drawing.Font("Courier New", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.MMTTYBox.Location = New System.Drawing.Point(12, 77)
+        Me.MMTTYBox.Name = "MMTTYBox"
+        Me.MMTTYBox.Size = New System.Drawing.Size(577, 26)
+        Me.MMTTYBox.TabIndex = 3
+        Me.MMTTYBox.TabStop = False
+        '
+        'monitorBar
+        '
+        Me.monitorBar.Location = New System.Drawing.Point(387, 35)
+        Me.monitorBar.MarqueeAnimationSpeed = 1
+        Me.monitorBar.Maximum = 1250
+        Me.monitorBar.Name = "monitorBar"
+        Me.monitorBar.Size = New System.Drawing.Size(178, 23)
+        Me.monitorBar.Step = 10000
+        Me.monitorBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous
+        Me.monitorBar.TabIndex = 2
+        '
+        'squelchBar
+        '
+        Me.squelchBar.Enabled = False
+        Me.squelchBar.LargeChange = 100
+        Me.squelchBar.Location = New System.Drawing.Point(103, 35)
+        Me.squelchBar.Maximum = 1250
+        Me.squelchBar.Name = "squelchBar"
+        Me.squelchBar.Size = New System.Drawing.Size(178, 45)
+        Me.squelchBar.SmallChange = 50
+        Me.squelchBar.TabIndex = 1
+        Me.squelchBar.TickFrequency = 50
+        Me.squelchBar.Value = 1
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!)
+        Me.Label4.Location = New System.Drawing.Point(313, 35)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(53, 20)
+        Me.Label4.TabIndex = 0
+        Me.Label4.Text = "Signal"
+        '
+        'Label1
+        '
+        Me.Label1.AutoSize = True
+        Me.Label1.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!)
+        Me.Label1.Location = New System.Drawing.Point(30, 35)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(67, 20)
+        Me.Label1.TabIndex = 0
+        Me.Label1.Text = "Squelch"
         '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.BackColor = System.Drawing.SystemColors.Control
-        Me.ClientSize = New System.Drawing.Size(624, 462)
-        Me.Controls.Add(Me.Button2)
+        Me.ClientSize = New System.Drawing.Size(624, 602)
+        Me.Controls.Add(Me.RTTYbox)
         Me.Controls.Add(Me.Button1)
         Me.Controls.Add(Me.GroupBox2)
         Me.Controls.Add(Me.GroupBox1)
         Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.MaximizeBox = False
-        Me.MaximumSize = New System.Drawing.Size(640, 500)
-        Me.MinimumSize = New System.Drawing.Size(640, 500)
+        Me.MaximumSize = New System.Drawing.Size(640, 640)
+        Me.MinimumSize = New System.Drawing.Size(640, 640)
         Me.Name = "Form1"
         Me.Text = "Talon Rock Monitor"
         Me.GroupBox1.ResumeLayout(False)
         Me.GroupBox1.PerformLayout()
-        Me.GroupBox2.ResumeLayout(False)
+        Me.RTTYbox.ResumeLayout(False)
+        Me.RTTYbox.PerformLayout()
+        CType(Me.squelchBar, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
 
     End Sub
@@ -280,7 +338,11 @@ Partial Class Form1
     Friend WithEvents IgnoreDataButton As System.Windows.Forms.Button
     Friend WithEvents Button1 As System.Windows.Forms.Button
     Friend WithEvents RockListAnimationTimer As System.Windows.Forms.Timer
-    Friend WithEvents Button2 As System.Windows.Forms.Button
-    Friend WithEvents MMTTY_Text As System.Windows.Forms.RichTextBox
+    Friend WithEvents RTTYbox As System.Windows.Forms.GroupBox
+    Friend WithEvents squelchBar As System.Windows.Forms.TrackBar
+    Friend WithEvents Label4 As System.Windows.Forms.Label
+    Friend WithEvents Label1 As System.Windows.Forms.Label
+    Friend WithEvents monitorBar As System.Windows.Forms.ProgressBar
+    Friend WithEvents MMTTYBox As System.Windows.Forms.TextBox
 
 End Class

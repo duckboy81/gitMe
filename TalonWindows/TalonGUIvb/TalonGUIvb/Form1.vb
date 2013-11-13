@@ -11,6 +11,33 @@ Public Class Form1
     Private Declare Function PostMessage Lib "user32.dll" Alias "PostMessageA" (ByVal hwnd As IntPtr, ByVal wMsg As Integer, ByVal wParam As Integer, ByVal lParam As IntPtr) As IntPtr
     Private Declare Function RegisterWindowMessage Lib "user32.dll" Alias "RegisterWindowMessageA" (ByVal lpString As String) As UInteger
 
+    '******CONFIGURATION VARIABLES******'
+    Dim numChar2ShowUpdate As Integer = 14
+    Dim configBaudRate As Integer = 5600 '(Baud rate * 100) = configuration
+    Dim configMarkFreq As Integer = 2100 'Hz
+    Dim configSpaceFreq As Integer = 2450 'Hz
+
+    Dim configSquelch As Integer = 0 'TODO
+
+    Dim configSwitch_DEM_TYPE As Short = 0      'b0-b1      Demodulator type        0-IIR, 1-FIR, 2-PLL
+    Dim configSwitch_AFC As Short = 0           'b2
+    Dim configSwitch_NET As Short = 0           'b3
+    Dim configSwitch_ATC As Short = 0           'b4
+    Dim configSwitch_BPF As Short = 0           'b5
+    Dim configSwitch_LMS_NOTCH As Short = 0     'b6
+    Dim configSwitch_SQ As Short = 1            'b7         Squelch
+    Dim configSwitch_Rev As Short = 0           'b8
+    Dim configSwitch_UOS As Short = 0           'b9
+    Dim configSwitch_AFC_Alg As Short = 1       'b10-b11    AFC shift algorithm (should not be used)
+    Dim configSwitch_Integrator As Short = 0    'b12        Integrator type         0-FIR, 1-IIR
+    Dim configSwitch_LMS_OR_NOTCH As Short = 0  'b13        LMS or Notch		    0-LMS, 1-Notch
+    Dim configSwitch_NUM_NOTCH As Short = 0     'b14                                0-single notch, 1-two notches
+    Dim configSwitch_KEY_BUFFER As Short = 0    'b15        RXM_CHAR method	        0-Key buffer OFF, 1-Key buffer ON
+    Dim configSwitch_WORD_WRAP As Short = 0     'b16        Word wrap
+    Dim configSwitch_WAY_TO_SENT As Short = 0   'b17-b18    Way to send             0-Char, 1-Word, 2-Line
+    Dim configSwitch As Short = 0
+
+
     Private Class rock
         Public rockName As String
         Public numDetections As Integer
@@ -23,6 +50,12 @@ Public Class Form1
         Public updatedString As String
     End Class
 
+    Dim blueBrush As New Drawing.SolidBrush(Color.Blue)
+    Dim whiteBrush As New Drawing.SolidBrush(Color.White)
+    Dim redBrush As New Drawing.SolidBrush(Color.Red)
+    Dim blackBrush As New Drawing.SolidBrush(Color.Black)
+    Dim greenBrush As New Drawing.SolidBrush(Color.Green)
+
     'MMTTY -> APP 
     Enum FROM_MMTTY
         TXM_HANDLE = &H8000
@@ -30,6 +63,27 @@ Public Class Form1
         TXM_START
         TXM_CHAR
         TXM_PTTEVENT
+
+        TXM_WIDTH
+        TXM_BAUD
+        TXM_MARK
+        TXM_SPACE
+        TXM_SWITCH
+
+        TXM_VIEW
+        TXM_LEVEL
+        TXM_FIGEVENT
+        TXM_RESO
+        TXM_LPF
+
+        TXM_THREAD
+        TXM_PROFILE
+        TXM_NOTCH
+        TXM_DEFSHIFT
+        TXM_RADIOFREQ
+
+        TXM_SHOWSETUP
+        TXM_SHOWPROFILE
     End Enum
 
     'APP -> MMTTY
@@ -77,16 +131,8 @@ Public Class Form1
 
     Dim rockList As ArrayList = New ArrayList
     Dim rockCount As Integer = 1
-    Dim numChar2ShowUpdate As Integer = 14
 
     Private Sub PaintMap(ByVal sender As Object, ByVal e As System.Windows.Forms.PaintEventArgs) Handles GroupBox2.Paint
-        'Handles Me.Paint
-
-        Dim blueBrush As New Drawing.SolidBrush(Color.Blue)
-        Dim whiteBrush As New Drawing.SolidBrush(Color.White)
-        Dim redBrush As New Drawing.SolidBrush(Color.Red)
-        Dim blackBrush As New Drawing.SolidBrush(Color.Black)
-        Dim greenBrush As New Drawing.SolidBrush(Color.Green)
 
         e.Graphics.FillRectangle(blackBrush, 20 - 1, 30 - 1, GroupBox2.Width - 40 + 2, GroupBox2.Height - 50 + 2)
         e.Graphics.FillRectangle(blueBrush, 20, 30, GroupBox2.Width - 40, GroupBox2.Height - 50)
@@ -257,11 +303,65 @@ Public Class Form1
             Case Else
                 If (message = MSG_MMTTY) Then
                     Select Case wParam
+                        Case FROM_MMTTY.TXM_LEVEL
+                            Dim signalLevel As Short = lParam.ToInt32 And &HFFFF
+                            Dim squelchLevel As Short = (lParam.ToInt32 And &HFFFF0000) >> 16
+
+
+                            If (signalLevel > 1250) Then
+                                signalLevel = 1250
+                            End If
+
+                            If (signalLevel < 0) Then
+                                signalLevel = 0
+                            End If
+
+                            monitorBar.Value = signalLevel
+
+                            If (squelchBar.Value = 1) Then
+                                'Enable squelch slider
+                                squelchBar.Enabled = True
+
+                                'Set initial squelch
+                                squelchBar.Value = squelchLevel
+                            End If
+
+                            Call RTTYprogressBar()
                         Case FROM_MMTTY.TXM_HANDLE
                             MMTTY_Handle = lParam
                             PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_HANDLE, hWnd)
+                            'Send configuration messages
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETBAUD, configBaudRate)
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETMARK, configMarkFreq)
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETSPACE, configSpaceFreq)
+
+                            configSwitch = configSwitch_DEM_TYPE _
+                                Or configSwitch_AFC << 2 _
+                                Or configSwitch_NET << 3 _
+                                Or configSwitch_ATC << 4 _
+                                Or configSwitch_BPF << 5 _
+                                Or configSwitch_LMS_NOTCH << 6 _
+                                Or configSwitch_SQ << 7 _
+                                Or configSwitch_Rev << 8 _
+                                Or configSwitch_UOS << 9 _
+                                Or configSwitch_AFC_Alg << 10 _
+                                Or configSwitch_Integrator << 12 _
+                                Or configSwitch_LMS_OR_NOTCH << 13 _
+                                Or configSwitch_NUM_NOTCH << 14 _
+                                Or configSwitch_KEY_BUFFER << 15 _
+                                Or configSwitch_WORD_WRAP << 16 _
+                                Or configSwitch_WAY_TO_SENT << 17
+
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETSWITCH, configSwitch)
+
+                            RTTYbox.Text = "RTTY Status - Running"
+
                         Case FROM_MMTTY.TXM_CHAR
-                            MMTTY_Text.Text = MMTTY_Text.Text + Chr(lParam.ToString)
+                            MMTTYBox.Text = MMTTYBox.Text + Chr(lParam.ToString)
+                        Case Else
+                            If (1 = 1) Then
+
+                            End If
                     End Select
                 End If
         End Select
@@ -269,19 +369,39 @@ Public Class Form1
         MyBase.WndProc(m)
     End Sub
 
-    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+    Private Sub squelchBar_Scroll(sender As Object, e As EventArgs) Handles squelchBar.Scroll
+        PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETSQLVL, squelchBar.Value)
 
-        MMTTY_process = Process.Start("C:\Users\C14JeanLuc.Duckworth\Downloads\MMTTY.EXE", "-r")
+    End Sub
 
-        'PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_PTT, 2)
+    Private Sub RTTYprogressBar()
+        Dim boxGraphics As Graphics = RTTYbox.CreateGraphics()
 
-        Dim hwnd As IntPtr = FindWindow(vbNullString, "Virtual CDRom Control Panel")
-        Dim x As IntPtr = FindWindowEx(hwnd, 0, vbNullString, "Driver Control ...")
+        'Draw sq open box
+        Dim xPos2 As Integer = monitorBar.Location.X + monitorBar.Width + 5
+        boxGraphics.FillRectangle(blackBrush, xPos2 - 1, monitorBar.Location.Y + 5 - 1, monitorBar.Size.Height - 10 + 2, monitorBar.Size.Height - 10 + 2)
+        boxGraphics.FillRectangle(redBrush, xPos2, monitorBar.Location.Y + 5, monitorBar.Size.Height - 10, monitorBar.Size.Height - 10)
 
-        'PostMessage(x, BM_CLICK, 0&, 0&)
-        'Thread.Sleep(200)
-        hwnd = FindWindow(vbNullString, "Virtual CD-ROM Driver Control")
-        Debug.Print(hwnd)
+        If (squelchBar.Value >= monitorBar.Value) Then
+            boxGraphics.FillRectangle(blackBrush, xPos2, monitorBar.Location.Y + 5, monitorBar.Size.Height - 10, monitorBar.Size.Height - 10)
+        End If
+    End Sub
+
+    Private Sub RTTYbox_Paint(sender As Object, e As PaintEventArgs) Handles RTTYbox.Paint
+        'Draw single line
+        Dim xPos As Integer = monitorBar.Location.X + monitorBar.Width * squelchBar.Value / (monitorBar.Maximum - monitorBar.Minimum)
+        e.Graphics.FillRectangle(blackBrush, xPos, monitorBar.Location.Y, 5, monitorBar.Size.Height)
+    End Sub
+
+    Private Sub MMTTYBox_TextChanged(sender As Object, e As EventArgs) Handles MMTTYBox.TextChanged
+        If (MMTTYBox.TextLength > 56) Then
+            MMTTYBox.Text = MMTTYBox.Text.Substring(MMTTYBox.TextLength - 56 - 1)
+        End If
+    End Sub
+
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        'Hide MMTTY
+        MMTTY_process = Process.Start("MMTTY.EXE", "-r -m -Z")
     End Sub
 End Class
 

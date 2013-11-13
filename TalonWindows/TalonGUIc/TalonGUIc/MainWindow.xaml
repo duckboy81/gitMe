@@ -1,0 +1,20 @@
+﻿<Window x:Class="TalonGUIc.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Talon Rock Monitor" Height="480" Width="810" ResizeMode="CanMinimize">
+    <Canvas Margin="10,13,10,10">
+        <GroupBox Header="Rock Status" Height="385" Canvas.Left="20" Canvas.Top="20" Width="325"  FontSize="20" >
+            <ListBox Margin="10,20,10,200" SelectionChanged="ListBox_SelectionChanged">
+                <ListBoxItem Content="0001"/>
+                <ListBoxItem Content="0004"/>
+                <ListBoxItem Content="0004"/>
+                <ListBoxItem Content="0005"/>
+                <ListBoxItem Content="0002"/>
+                <ListBoxItem Content="0003"/>
+            </ListBox>
+        </GroupBox>
+        <GroupBox Header="Rock Map" Height="385" Canvas.Left="360" Canvas.Top="20" Width="405" FontSize="20"/>
+    </Canvas>
+
+
+</Window>
