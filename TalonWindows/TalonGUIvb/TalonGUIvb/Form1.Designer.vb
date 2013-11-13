@@ -80,7 +80,7 @@ Partial Class Form1
         Me.BatteryBar.Location = New System.Drawing.Point(262, 105)
         Me.BatteryBar.Name = "BatteryBar"
         Me.BatteryBar.Size = New System.Drawing.Size(127, 23)
-        Me.BatteryBar.TabIndex = 4
+        Me.BatteryBar.TabIndex = 0
         '
         'ResetButton
         '
@@ -89,7 +89,7 @@ Partial Class Form1
         Me.ResetButton.Location = New System.Drawing.Point(533, 104)
         Me.ResetButton.Name = "ResetButton"
         Me.ResetButton.Size = New System.Drawing.Size(56, 25)
-        Me.ResetButton.TabIndex = 3
+        Me.ResetButton.TabIndex = 2
         Me.ResetButton.Text = "Reset"
         Me.ResetButton.UseVisualStyleBackColor = True
         '
@@ -100,7 +100,7 @@ Partial Class Form1
         Me.IgnoreDataButton.Location = New System.Drawing.Point(430, 104)
         Me.IgnoreDataButton.Name = "IgnoreDataButton"
         Me.IgnoreDataButton.Size = New System.Drawing.Size(94, 25)
-        Me.IgnoreDataButton.TabIndex = 3
+        Me.IgnoreDataButton.TabIndex = 1
         Me.IgnoreDataButton.Text = "Ignore Data"
         Me.IgnoreDataButton.UseVisualStyleBackColor = True
         '
@@ -209,7 +209,7 @@ Partial Class Form1
         Me.GroupBox2.Location = New System.Drawing.Point(14, 158)
         Me.GroupBox2.Name = "GroupBox2"
         Me.GroupBox2.Size = New System.Drawing.Size(600, 300)
-        Me.GroupBox2.TabIndex = 1
+        Me.GroupBox2.TabIndex = 0
         Me.GroupBox2.TabStop = False
         Me.GroupBox2.Text = "Rock Mapping"
         '
@@ -219,7 +219,8 @@ Partial Class Form1
         Me.Button1.Location = New System.Drawing.Point(487, 0)
         Me.Button1.Name = "Button1"
         Me.Button1.Size = New System.Drawing.Size(121, 18)
-        Me.Button1.TabIndex = 2
+        Me.Button1.TabIndex = 0
+        Me.Button1.TabStop = False
         Me.Button1.Text = "Populate Rock List"
         Me.Button1.UseVisualStyleBackColor = True
         '
@@ -238,7 +239,7 @@ Partial Class Form1
         Me.RTTYbox.Location = New System.Drawing.Point(13, 464)
         Me.RTTYbox.Name = "RTTYbox"
         Me.RTTYbox.Size = New System.Drawing.Size(600, 126)
-        Me.RTTYbox.TabIndex = 4
+        Me.RTTYbox.TabIndex = 0
         Me.RTTYbox.TabStop = False
         Me.RTTYbox.Text = "RTTY Status - Offline"
         '
@@ -250,7 +251,7 @@ Partial Class Form1
         Me.MMTTYBox.Location = New System.Drawing.Point(12, 77)
         Me.MMTTYBox.Name = "MMTTYBox"
         Me.MMTTYBox.Size = New System.Drawing.Size(577, 26)
-        Me.MMTTYBox.TabIndex = 3
+        Me.MMTTYBox.TabIndex = 0
         Me.MMTTYBox.TabStop = False
         '
         'monitorBar
@@ -262,7 +263,7 @@ Partial Class Form1
         Me.monitorBar.Size = New System.Drawing.Size(178, 23)
         Me.monitorBar.Step = 10000
         Me.monitorBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous
-        Me.monitorBar.TabIndex = 2
+        Me.monitorBar.TabIndex = 0
         '
         'squelchBar
         '
@@ -273,7 +274,7 @@ Partial Class Form1
         Me.squelchBar.Name = "squelchBar"
         Me.squelchBar.Size = New System.Drawing.Size(178, 45)
         Me.squelchBar.SmallChange = 50
-        Me.squelchBar.TabIndex = 1
+        Me.squelchBar.TabIndex = 3
         Me.squelchBar.TickFrequency = 50
         Me.squelchBar.Value = 1
         '

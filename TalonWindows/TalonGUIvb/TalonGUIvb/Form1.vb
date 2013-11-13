@@ -1,6 +1,5 @@
 ﻿'Created by Jean-Luc Duckworth
-'TODO: Set rock list font to a uniform sized font
-'TODO: Start compiling method for decoding messages from HAM radio
+'TODO: Determine GPS messages -- setup process to decode them
 'TODO: Consider whether or not to send a diddle message of LCTR when idle -- better performance?
 
 Option Explicit On
@@ -55,6 +54,10 @@ Public Class Form1
     Dim redBrush As New Drawing.SolidBrush(Color.Red)
     Dim blackBrush As New Drawing.SolidBrush(Color.Black)
     Dim greenBrush As New Drawing.SolidBrush(Color.Green)
+
+    Dim incomingDataStart As Boolean = False
+    Dim incomingDataBuffer As Queue(Of Char) = New Queue(Of Char)()
+    Dim incomingDataNumUntilEnd As Integer = -1
 
     'MMTTY -> APP 
     Enum FROM_MMTTY
@@ -135,7 +138,7 @@ Public Class Form1
     Private Sub PaintMap(ByVal sender As Object, ByVal e As System.Windows.Forms.PaintEventArgs) Handles GroupBox2.Paint
 
         e.Graphics.FillRectangle(blackBrush, 20 - 1, 30 - 1, GroupBox2.Width - 40 + 2, GroupBox2.Height - 50 + 2)
-        e.Graphics.FillRectangle(blueBrush, 20, 30, GroupBox2.Width - 40, GroupBox2.Height - 50)
+        e.Graphics.FillRectangle(whiteBrush, 20, 30, GroupBox2.Width - 40, GroupBox2.Height - 50)
 
     End Sub
 
@@ -357,7 +360,44 @@ Public Class Form1
                             RTTYbox.Text = "RTTY Status - Running"
 
                         Case FROM_MMTTY.TXM_CHAR
-                            MMTTYBox.Text = MMTTYBox.Text + Chr(lParam.ToString)
+                            'Dim incomingDataStart As Boolean = False
+                            'Dim incomingDataBuffer As Queue(Of Char) = New Queue(Of Char)()
+                            'Dim incomingDataNumUntilEnd As Integer = -1
+                            Dim incomingChar As Char = Chr(lParam.ToString)
+
+                            'Add to debug box
+                            MMTTYBox.Text = MMTTYBox.Text + incomingChar
+
+                            'Beginning of string
+                            If (incomingChar = "$") Then
+                                incomingDataStart = True
+
+                                If (incomingDataNumUntilEnd < -1) Then
+                                    Call synthesizeIncomingData()
+                                End If
+
+                                incomingDataNumUntilEnd = -1
+                            End If
+
+                            If (incomingDataStart = True) Then
+                                'Checksum of string
+                                If (incomingChar = "&") Then
+                                    incomingDataNumUntilEnd = 5
+                                End If
+
+                                'Add to queue
+                                incomingDataBuffer.Enqueue(incomingChar)
+
+                                'Decrement handle
+                                incomingDataNumUntilEnd = incomingDataNumUntilEnd - 1
+                            End If
+
+                            'End of string
+                            If (incomingDataNumUntilEnd = 0 And incomingDataStart = True) Then
+                                incomingDataStart = False
+                                Call synthesizeIncomingData()
+                            End If
+
                         Case Else
                             If (1 = 1) Then
 
@@ -369,9 +409,71 @@ Public Class Form1
         MyBase.WndProc(m)
     End Sub
 
+    Private Sub synthesizeIncomingData()
+        Dim startStringIdent As Boolean = False
+        Dim compiledString As String = ""
+
+        While (incomingDataBuffer.Count > 0)
+            If (incomingDataBuffer.Peek = "$" And startStringIdent = True) Then
+                Exit While
+            End If
+
+            startStringIdent = True
+
+            compiledString = compiledString + incomingDataBuffer.Dequeue
+
+        End While
+
+        Console.WriteLine(compiledString)
+        handleIncomingData(compiledString)
+    End Sub
+
+    Private Sub handleIncomingData(incomingString As String)
+        Dim stringPortionPos As Integer = 0
+        Dim message_id As String = ""
+        Dim module_id As String = ""
+        Dim ham_message As String = ""
+        Dim checksum As UInteger = 0
+
+        'Needs to contain checksum identifier
+        If (Not incomingString.Contains("&")) Then
+            Exit Sub
+        End If
+
+        Try
+            'Remove leading $ sign
+            incomingString = incomingString.Substring(1)
+
+            'Determine checksum
+            checksum = CInt(incomingString.Substring(incomingString.LastIndexOf("&") + 1, 4))
+            incomingString = incomingString.Substring(0, incomingString.LastIndexOf("&"))
+
+            'Determine message id
+            message_id = incomingString.Split(";")(0)
+
+            'Determine module id
+            module_id = incomingString.Split(";")(1)
+
+            'Determine message
+            ham_message = incomingString.Split(";")(2)
+
+        Catch ex As Exception
+            Exit Sub
+        End Try
+
+        Select Case message_id
+            Case "G"
+
+            Case "S"
+
+            Case "D"
+
+        End Select
+    End Sub
+
     Private Sub squelchBar_Scroll(sender As Object, e As EventArgs) Handles squelchBar.Scroll
         PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETSQLVL, squelchBar.Value)
-
+        monitorBar.Refresh()
     End Sub
 
     Private Sub RTTYprogressBar()
@@ -390,7 +492,7 @@ Public Class Form1
     Private Sub RTTYbox_Paint(sender As Object, e As PaintEventArgs) Handles RTTYbox.Paint
         'Draw single line
         Dim xPos As Integer = monitorBar.Location.X + monitorBar.Width * squelchBar.Value / (monitorBar.Maximum - monitorBar.Minimum)
-        e.Graphics.FillRectangle(blackBrush, xPos, monitorBar.Location.Y, 5, monitorBar.Size.Height)
+        e.Graphics.FillRectangle(blackBrush, xPos, monitorBar.Location.Y + 1, 5, monitorBar.Size.Height - 2)
     End Sub
 
     Private Sub MMTTYBox_TextChanged(sender As Object, e As EventArgs) Handles MMTTYBox.TextChanged
@@ -403,5 +505,6 @@ Public Class Form1
         'Hide MMTTY
         MMTTY_process = Process.Start("MMTTY.EXE", "-r -m -Z")
     End Sub
+
 End Class
 
