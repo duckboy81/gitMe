@@ -22,11 +22,14 @@ void charNumberToString(unsigned char numberToConvert, unsigned char outputStrin
  * 	outputString[5] - The buffer space for the output string (not null terminated!!)
  */
 void intNumberToString(unsigned int numberToConvert, unsigned char outputString[5]) {
-	char i;
+	signed char i;
 
-	for(i = 0; i<5; i++) {
+	for(i=4; i>=0; i--) {
 		outputString[i] = numberToConvert % 10 + 0x30; //A zero in ASCII is code 0x30
-		numberToConvert = numberToConvert >> 1;
+
+		if (numberToConvert != 0) {
+			numberToConvert = numberToConvert / 10;
+		} //if()
 	} //for()
 
 } //intNumberToString

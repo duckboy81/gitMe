@@ -12,9 +12,6 @@
 //#define MAX_GPS_LOCK_TIME 600 //Time in seconds (defined in commonInclude.h)
 
 //Declare variables
-/* SORRY FOR THE CRAPPY METHODOLOGY IN PUTTING THESE VARIABLES TOGETHER.
- * COMBINING THE VARIABLES CAUSED THE uCONTROLLER TO CONSTANTLY RESET.
- */
 static unsigned char GPGGAinfo[MAX_GPS_BUFFER_LENGTH];
 static unsigned char gpsFixStatus = 0;
 static char GPGGAflag = 0;

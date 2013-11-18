@@ -60,6 +60,15 @@ enum baudot_mode
   FIGURES
 };
 
+enum send_select
+{
+  MESSAGE_ID,
+  MODULE_ID,
+  MESSAGE_TO_SEND,
+  CHECKSUM,
+  NONE
+};
+
 static unsigned char sendHAMCharToBaudot(char c, const char *array)
 {
 	unsigned char i;
@@ -77,36 +86,47 @@ static unsigned char sendHAMCharToBaudot(char c, const char *array)
 //Returns TRUE if able to send string to HAM buffer
 unsigned char sendHAMString(char* stringToSend, unsigned int moduleID, unsigned char messageID) {
 	enum baudot_mode currentMode = NONE;
+	enum send_select currentSendMsg = MESSAGE_ID;
 	unsigned char i = 0;
-	unsigned char j = 0;
+	unsigned char j = 2; //Starts at two because of FIG_SHIFT and $-sign at the beginning
 	unsigned char currChar;
 	unsigned char checkSum;
-	unsigned char checkSumPos = 0;
-	unsigned char checkSumString[4];
+	signed char checkSumPos = -1;
+	unsigned char checkSumString[5];
 
 	if (!isHAMReady()) { return FALSE; }
+
+	//Reset ready flag
+	sendHAMReady = 0;
 
 	//Disable 45.45 baud interrupt
 	TA0CCTL0 = 0x00;
 
+	//Place a FIG_LTR notice at the beginning of the string
+	sendHAMStringBuffer[0] = FIGURES_SHIFT;
+
+	//Place a $ sign at the beginning of the string (in Baudot)
+	sendHAMStringBuffer[1] = 10;
+
 	//Obtain the check sum
-	//checkSum = signedStringChecksum(stringToSend);
+	checkSum = signedStringChecksum(stringToSend);
 
 	//Convert checksum to obtain
-	//intNumberToString(checkSum, checkSumString);
+	intNumberToString(checkSum, checkSumString);
 
 	//Add string to global
-//	while(checkSumPos < 4 || stringToSend[i] != '\0') {
-//		//Original message or checksum?
-//		if (stringToSend[i] != '\0') {
-//			currChar = stringToSend[i];
-//			checkSumPos--;
-//		} else {
-//			currChar = checkSumString[checkSumPos];
-//			i--;
-//		} //if-else
-	while(stringToSend[i] != '\0') {
-		currChar = stringToSend[i];
+	while(checkSumPos < 5 || stringToSend[i] != '\0') {
+		//Original message or checksum?
+		if (stringToSend[i] != '\0') {
+			currChar = stringToSend[i];
+			checkSumPos--;
+		} else if (checkSumPos == -1) {
+			currChar = '&';
+			i--;
+		} else {
+			currChar = checkSumString[checkSumPos];
+			i--;
+		} //if-else
 
 	    /* some characters are available in both sets */
 	    if (currChar == '\n') {
@@ -142,13 +162,6 @@ unsigned char sendHAMString(char* stringToSend, unsigned int moduleID, unsigned 
 	    i++;
 	    j++;
 	    checkSumPos++;
-
-//	    //TODO: REMOVE THIS MARK (RECENTLY ADDED)
-//	    //Need a # for the hash?
-//	    if (checkSumPos == 0 && stringToSend[i] == '\0') {
-//	    	sendHAMStringBuffer[j] = 0x14;
-//	    	j++;
-//	    } //if()
 	} //while()
 
 	//Add line-feed
@@ -163,9 +176,6 @@ unsigned char sendHAMString(char* stringToSend, unsigned int moduleID, unsigned 
 
 	//Reset bit position
 	sendHAMBitPosition = 0;
-
-	//Reset ready flag
-	sendHAMReady = 0;
 
 	//Reset baud PWM
 	TA0CCTL1 = OUTMOD_7;
@@ -232,6 +242,7 @@ __interrupt void TA0_ISR(void)
 			sendHAMBitPosition = 0;
 			sendHAMStringPosition++;
 		} else {
+			//Determine if the current BIT in the current BYTE is a one or zero
 			if (currByte & (1 << (sendHAMBitPosition - 1) )) {
 				sendHAMSetMark();
 			} else {
