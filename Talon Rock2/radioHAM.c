@@ -60,13 +60,16 @@ enum baudot_mode
   FIGURES
 };
 
+//Ensure something is between each message!!
 enum send_select
 {
   MESSAGE_ID,
+  	  SEMICOLON_1,
   MODULE_ID,
+  	  SEMICOLON_2,
   MESSAGE_TO_SEND,
   CHECKSUM,
-  NONE
+  FINISHED
 };
 
 static unsigned char sendHAMCharToBaudot(char c, const char *array)
@@ -87,12 +90,12 @@ static unsigned char sendHAMCharToBaudot(char c, const char *array)
 unsigned char sendHAMString(char* stringToSend, unsigned int moduleID, unsigned char messageID) {
 	enum baudot_mode currentMode = NONE;
 	enum send_select currentSendMsg = MESSAGE_ID;
-	unsigned char i = 0;
-	unsigned char j = 2; //Starts at two because of FIG_SHIFT and $-sign at the beginning
+	signed int i = 0;
+	unsigned char j = 3; //Starts at two because of FIG_SHIFT and $-sign at the beginning
 	unsigned char currChar;
 	unsigned char checkSum;
-	signed char checkSumPos = -1;
 	unsigned char checkSumString[5];
+	unsigned char moduleIDString[5];
 
 	if (!isHAMReady()) { return FALSE; }
 
@@ -104,31 +107,50 @@ unsigned char sendHAMString(char* stringToSend, unsigned int moduleID, unsigned 
 
 	//Place a FIG_LTR notice at the beginning of the string
 	sendHAMStringBuffer[0] = FIGURES_SHIFT;
+	sendHAMStringBuffer[1] = FIGURES_SHIFT;
 
 	//Place a $ sign at the beginning of the string (in Baudot)
-	sendHAMStringBuffer[1] = 10;
+	sendHAMStringBuffer[2] = 9;
 
-	//Obtain the check sum
+	//Obtain the check sum of stringToSend
 	checkSum = signedStringChecksum(stringToSend);
 
-	//Convert checksum to obtain
+	//Add variability to checksum
+	checkSum += moduleID;
+	checkSum += messageID;
+
+	//Convert checksum to ASCII
 	intNumberToString(checkSum, checkSumString);
 
-	//Add string to global
-	while(checkSumPos < 5 || stringToSend[i] != '\0') {
-		//Original message or checksum?
-		if (stringToSend[i] != '\0') {
-			currChar = stringToSend[i];
-			checkSumPos--;
-		} else if (checkSumPos == -1) {
-			currChar = '&';
-			i--;
-		} else {
-			currChar = checkSumString[checkSumPos];
-			i--;
-		} //if-else
+	//Convert moduleID to ASCII
+	intNumberToString(moduleID, moduleIDString);
 
-	    /* some characters are available in both sets */
+
+	//Add string to global
+	//while(checkSumPos < 5 || stringToSend[i] != '\0') {
+	while(currentSendMsg != FINISHED) {
+		switch(currentSendMsg) {
+		case MESSAGE_ID:
+			currChar = messageID;
+			break;
+
+		case MODULE_ID:
+			currChar = moduleIDString[i];
+			break;
+
+		case MESSAGE_TO_SEND:
+			currChar = stringToSend[i];
+			break;
+
+		case CHECKSUM:
+			if (i == 0) {
+				currChar = '&';
+			} else {
+				currChar = checkSumString[i - 1];
+			} //if-else
+		}//switch(currentSendMsg)
+
+	    /* Some characters are available in both sets */
 	    if (currChar == '\n') {
 	    	sendHAMStringBuffer[j] = LINEFEED;
 	    } else if (currChar == '\r') {
@@ -161,7 +183,52 @@ unsigned char sendHAMString(char* stringToSend, unsigned int moduleID, unsigned 
 
 	    i++;
 	    j++;
-	    checkSumPos++;
+
+		switch(currentSendMsg) {
+		case MESSAGE_ID:
+			//Next mode
+			i = 0;
+			currentSendMsg++;
+			break;
+
+		case MODULE_ID:
+			//Next mode
+			if (i == 5) {
+				i=0;
+				currentSendMsg++;
+			} //if(next mode)
+			break;
+
+		case MESSAGE_TO_SEND:
+			//Next mode
+			if (stringToSend[i] == '\0') {
+				i=0;
+				currentSendMsg++;
+			} //if(next mode)
+			break;
+
+		case CHECKSUM:
+			//Next mode
+			if (i == 6) {
+				i=0;
+				currentSendMsg++;
+			} //if(next mode)
+			break;
+
+		}//switch(currentSendMsg)
+
+		//Are we in between a message? Should be all odd figures
+		if (currentSendMsg == SEMICOLON_1 || currentSendMsg == SEMICOLON_2) {
+			if (currentMode != FIGURES) {
+				sendHAMStringBuffer[j] = FIGURES_SHIFT;
+				j++;
+				currentMode = FIGURES;
+			} //if()
+
+			sendHAMStringBuffer[j] = 0x1E;
+			j++;
+			currentSendMsg++;
+		} //if()
 	} //while()
 
 	//Add line-feed

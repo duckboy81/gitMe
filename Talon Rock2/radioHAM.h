@@ -30,8 +30,12 @@
 #define DUTY_SHIFT 204
 
 //56Hz
-#define PERIOD_BAUD 17857
-#define DUTY_BAUD 8929
+//#define PERIOD_BAUD 17857
+//#define DUTY_BAUD 8929
+
+//75Hz
+#define PERIOD_BAUD 13333
+#define DUTY_BAUD 6667
 
 #define IS_MARK 1
 #define IS_SHIFT 0

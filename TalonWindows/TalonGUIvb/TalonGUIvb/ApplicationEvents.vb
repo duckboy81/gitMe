@@ -15,6 +15,7 @@
             Me.MinimumSplashScreenDisplayTime = 3000
             Return MyBase.OnInitialize(commandLineArgs)
         End Function
+
     End Class
 
 

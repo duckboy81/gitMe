@@ -9,7 +9,7 @@
 	//	definition will require the GPS to have XX seconds of good GPS locks
 	//	(greater than three satellites) before it reports the GPS info out.
 #define MIN_GPS_LOCK_CYCLES 120		//Max value 65536
-#define MAX_GPS_LOCK_TIME 5 		//(Standard about 600 seconds)
+#define MAX_GPS_LOCK_TIME 20 		//(Standard about 600 seconds)
 
 /* queue.h */
 #define QUEUESIZE       	005	//Max value 32767

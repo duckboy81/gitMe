@@ -1,8 +1,10 @@
 ﻿'Created by Jean-Luc Duckworth
-'TODO: Determine GPS messages -- setup process to decode them
-'TODO: Consider whether or not to send a diddle message of LCTR when idle -- better performance?
+'TODO: Just added the GMaps feature into the form -- working on how to add a point to the map dynamically --
+'next problem is to control the javascript from VB.net
+'http://stackoverflow.com/questions/3514152/adding-points-to-google-map-api
 
 Option Explicit On
+
 Public Class Form1
     Private Declare Function FindWindow Lib "user32.dll" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr
     Private Declare Function FindWindowEx Lib "user32.dll" Alias "FindWindowExA" (ByVal hWndParent As IntPtr, ByVal hWndChildAfter As Integer, ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr
@@ -12,7 +14,8 @@ Public Class Form1
 
     '******CONFIGURATION VARIABLES******'
     Dim numChar2ShowUpdate As Integer = 14
-    Dim configBaudRate As Integer = 5600 '(Baud rate * 100) = configuration
+    'Dim configBaudRate As Integer = 5600 '(Baud rate * 100) = configuration
+    Dim configBaudRate As Integer = 7500 '(Baud rate * 100) = configuration
     Dim configMarkFreq As Integer = 2100 'Hz
     Dim configSpaceFreq As Integer = 2450 'Hz
 
@@ -40,8 +43,12 @@ Public Class Form1
     Private Class rock
         Public rockName As String
         Public numDetections As Integer
-        Public posLatitude As Double
-        Public posLongitude As Double
+        Public posLatitudeDeg As Integer
+        Public posLatitudeMinute As Integer
+        Public posLatitudeSecond As Integer
+        Public posLongitudeDeg As Integer
+        Public posLongitudeMinute As Integer
+        Public posLongitudeSecond As Integer
         Public dataIgnored As Boolean
         Public status As String
         Public batteryLevel As Integer
@@ -54,6 +61,10 @@ Public Class Form1
     Dim redBrush As New Drawing.SolidBrush(Color.Red)
     Dim blackBrush As New Drawing.SolidBrush(Color.Black)
     Dim greenBrush As New Drawing.SolidBrush(Color.Green)
+    Dim viewport As Point = New Point(0, 0)
+    Dim viewportScale As Single = 1
+    Dim xMouseDrag As Integer
+    Dim yMouseDrag As Integer
 
     Dim incomingDataStart As Boolean = False
     Dim incomingDataBuffer As Queue(Of Char) = New Queue(Of Char)()
@@ -135,56 +146,161 @@ Public Class Form1
     Dim rockList As ArrayList = New ArrayList
     Dim rockCount As Integer = 1
 
-    Private Sub PaintMap(ByVal sender As Object, ByVal e As System.Windows.Forms.PaintEventArgs) Handles GroupBox2.Paint
+    'Private Sub PaintMap(ByVal sender As Object, ByVal e As System.Windows.Forms.PaintEventArgs) Handles GroupBox2.Paint
 
-        e.Graphics.FillRectangle(blackBrush, 20 - 1, 30 - 1, GroupBox2.Width - 40 + 2, GroupBox2.Height - 50 + 2)
-        e.Graphics.FillRectangle(whiteBrush, 20, 30, GroupBox2.Width - 40, GroupBox2.Height - 50)
+    '    e.Graphics.TranslateTransform(20, 30)
+    '    e.Graphics.Clip = New Region(New Rectangle(-1, -1, GroupBox2.Width - 40 + 3, GroupBox2.Height - 50 + 3))
+
+    '    e.Graphics.FillRectangle(whiteBrush, 0, 0, GroupBox2.Width - 40, GroupBox2.Height - 50)
+
+    '    Dim ugsLocations As New List(Of Point)
+
+    '    ugsLocations.Add(New Point(34.555, -104.232))
+    '    ugsLocations.Add(New Point(37.555, -107.232))
+    '    ugsLocations.Add(New Point(38.555, -103.232))
+    '    ugsLocations.Add(New Point(32.555, -108.232))
+
+    '    'Set both viewport initial properties
+    '    If (viewport.IsEmpty) Then
+    '        Dim avgX As Double
+    '        Dim avgY As Double
+
+    '        viewportScale = 1
+
+    '        For Each thisUgs In ugsLocations
+    '            avgX += thisUgs.X
+    '            avgY += thisUgs.Y
+    '        Next
+
+    '        avgX = avgX / ugsLocations.Count
+    '        avgY = avgY / ugsLocations.Count
+
+    '        viewport = New Point(e.Graphics.VisibleClipBounds.Width / 2 + avgX, e.Graphics.VisibleClipBounds.Height / 2 + avgY)
+    '    End If
+
+    '    For Each thisUGS In ugsLocations
+    '        Dim xPos As Integer = viewport.X - thisUGS.X
+    '        Dim yPos As Integer = viewport.Y - thisUGS.Y
+
+    '        'Offset x direction
+    '        xPos = xPos + (xPos - e.Graphics.VisibleClipBounds.Width) * viewportScale
+
+    '        'Offset y direction
+    '        yPos = yPos + (yPos - e.Graphics.VisibleClipBounds.Height) * viewportScale
+
+    '        e.Graphics.FillPie(Brushes.Red, xPos, yPos, 15, 15, 0, 360)
+    '    Next
+
+    '    ''Define a geographic coordinate, in this case a GPS location
+    '    'Dim myLocation As PointF = New PointF()
+    '    'myLocation.Y = 39.2       '39 North
+    '    'myLocation.X = -105.4     '105  West
+
+    '    ''Now use our projection class to flatten this coordinate
+    '    'Dim projection As PlateCaree = New PlateCaree()
+    '    'Dim myProjectedLocation As PointF = projection.Project(myLocation)
+    '    'myLocation = projection.Deproject(myProjectedLocation)
+
+    '    ''Use a matrix for translation and scaling
+    '    'Dim transform As Drawing2D.Matrix = New Drawing2D.Matrix()
+
+    '    ''Define the viewport
+    '    'Dim viewport As PointF = New PointF(39, -105)
+
+    '    ''First, translate all projected points so that they match up with pixel 0,0
+    '    'transform.Translate(-viewport.X, viewport.Y, Drawing2D.MatrixOrder.Append)
+
+    '    ''Next, scale all points so that the viewport fits inside the form.
+    '    ''transform.Scale(RTTYbox.Width / viewport.Width, RTTYbox.Height / -viewport.Height, MatrixOrder.Append)
+
+    '    ''Apply this transform to all graphics operations
+    '    'e.Graphics.Transform = transform
+
+    '    ''Draw coordinates
+    '    'e.Graphics.FillPolygon(Brushes.Red, )
+
+    '    e.Graphics.DrawRectangle(Pens.Black, -1, -1, GroupBox2.Width - 40 + 2, GroupBox2.Height - 50 + 2)
+    'End Sub
+
+    Private Sub testBrowser()
 
     End Sub
-
 
     Private Sub AddRockToList(thisRock As rock)
         ListBox1.Items.Add(thisRock.rockName)
     End Sub
 
     Private Sub ListBox1_SelectedValueChanged(sender As Object, e As EventArgs) Handles ListBox1.SelectedValueChanged, ListBox1.SelectedIndexChanged
+        Dim buttonEnable As Boolean = False
 
         For Each thisRock As rock In rockList
-            IgnoreDataButton.Enabled = False
-            ResetButton.Enabled = False
 
             If (IsNothing(ListBox1.SelectedItem) = False) Then
-                If (ListBox1.SelectedItem.ToString.Contains(thisRock.rockName)) Then
+
+                If (ListBox1.SelectedItem.ToString.Contains(thisRock.rockName) And ListBox1.Tag <> thisRock.rockName) Then
+                    ListBox1.Tag = thisRock.rockName
                     statusLabel.Text = thisRock.status
                     detectionsLabel.Text = thisRock.numDetections
-                    latitudeLabel.Text = thisRock.posLatitude
-                    longitudeLabel.Text = thisRock.posLongitude
                     batteryLabel.Text = thisRock.batteryLevel.ToString + "%"
                     BatteryBar.Value = thisRock.batteryLevel
+
+                    latitudeLabel.Text = thisRock.posLatitudeDeg & "° " & _
+                        thisRock.posLatitudeMinute & "' " & _
+                        thisRock.posLatitudeSecond & Chr(34)
+
+                    If (thisRock.posLatitudeDeg > 0) Then
+                        latitudeLabel.Text += " N"
+                    End If
+
+                    If (thisRock.posLatitudeDeg < 0) Then
+                        latitudeLabel.Text += " S"
+                    End If
+
+
+                    longitudeLabel.Text = thisRock.posLongitudeDeg & "° " & _
+                        thisRock.posLongitudeMinute & "' " & _
+                        thisRock.posLongitudeSecond & Chr(34)
+
+                    If (thisRock.posLongitudeDeg > 0) Then
+                        longitudeLabel.Text += " E"
+                    End If
+
+                    If (thisRock.posLongitudeDeg < 0) Then
+                        longitudeLabel.Text += " W"
+                    End If
 
                     IgnoreDataButton.Text = "Ignore Data"
                     If (thisRock.dataIgnored = True) Then
                         IgnoreDataButton.Text = "Allow Data"
                     End If
 
-                    IgnoreDataButton.Enabled = True
-                    ResetButton.Enabled = True
                     Exit For
                 End If
+
+                buttonEnable = True
             End If
         Next
 
+        IgnoreDataButton.Enabled = buttonEnable
+        ResetButton.Enabled = buttonEnable
     End Sub
 
     Private Sub Button1_Click_1(sender As Object, e As EventArgs) Handles Button1.Click
         Dim tempRock As rock
 
+        'ROCK 1
         tempRock = New rock
         tempRock.rockName = "Rock " + rockCount.ToString
         rockCount = rockCount + 1
         tempRock.numDetections = 4
-        tempRock.posLatitude = 32.40239
-        tempRock.posLongitude = -103.123112
+
+        tempRock.posLatitudeDeg = 34
+        tempRock.posLatitudeMinute = 14
+        tempRock.posLatitudeSecond = 12.34
+        tempRock.posLongitudeDeg = -101
+        tempRock.posLongitudeMinute = 13
+        tempRock.posLongitudeSecond = 45
+
         tempRock.dataIgnored = False
         tempRock.status = "Listening"
         tempRock.batteryLevel = 46
@@ -193,24 +309,38 @@ Public Class Form1
         rockList.Add(tempRock)
         AddRockToList(tempRock)
 
+        'ROCK 2
         tempRock = New rock
         tempRock.rockName = "Rock " + rockCount.ToString
         rockCount = rockCount + 1
         tempRock.numDetections = 14
-        tempRock.posLatitude = 33.40239
-        tempRock.posLongitude = -101.123112
+
+        tempRock.posLatitudeDeg = 34
+        tempRock.posLatitudeMinute = 14
+        tempRock.posLatitudeSecond = 12.34
+        tempRock.posLongitudeDeg = -101
+        tempRock.posLongitudeMinute = 13
+        tempRock.posLongitudeSecond = 45
+
         tempRock.dataIgnored = False
         tempRock.status = "Obtaining GPS Data"
         tempRock.batteryLevel = 83
         rockList.Add(tempRock)
         AddRockToList(tempRock)
 
+        'ROCK 3
         tempRock = New rock
         tempRock.rockName = "Rock " + rockCount.ToString
         rockCount = rockCount + 1
         tempRock.numDetections = 0
-        tempRock.posLatitude = 31.40239
-        tempRock.posLongitude = -102.123112
+
+        tempRock.posLatitudeDeg = 34
+        tempRock.posLatitudeMinute = 14
+        tempRock.posLatitudeSecond = 12.34
+        tempRock.posLongitudeDeg = -101
+        tempRock.posLongitudeMinute = 13
+        tempRock.posLongitudeSecond = 45
+
         tempRock.dataIgnored = False
         tempRock.status = "Listening"
         tempRock.batteryLevel = 49
@@ -220,12 +350,15 @@ Public Class Form1
 
     Private Sub IgnoreDataButton_Click(sender As Object, e As EventArgs) Handles IgnoreDataButton.Click
         For Each thisRock As rock In rockList
-            If (ListBox1.SelectedItem = thisRock.rockName) Then
+            If (ListBox1.Tag = thisRock.rockName) Then
                 thisRock.dataIgnored = Not (thisRock.dataIgnored)
 
                 Exit For
             End If
         Next
+
+        'Ensure next method updates
+        ListBox1.Tag = ""
 
         'Update the current information
         Call ListBox1_SelectedValueChanged(Nothing, Nothing)
@@ -233,16 +366,23 @@ Public Class Form1
 
     Private Sub ResetButton_Click(sender As Object, e As EventArgs) Handles ResetButton.Click
         For Each thisRock As rock In rockList
-            If (ListBox1.SelectedItem = thisRock.rockName) Then
+            If (ListBox1.Tag = thisRock.rockName) Then
                 thisRock.batteryLevel = 0
                 thisRock.dataIgnored = False
                 thisRock.numDetections = 0
-                thisRock.posLatitude = 0
-                thisRock.posLongitude = 0
+                thisRock.posLatitudeDeg = 0
+                thisRock.posLatitudeMinute = 0
+                thisRock.posLatitudeSecond = 0
+                thisRock.posLongitudeDeg = 0
+                thisRock.posLongitudeMinute = 0
+                thisRock.posLongitudeSecond = 0
                 thisRock.status = "Awaiting Next Data Pulse"
                 Exit For
             End If
         Next
+
+        'Ensure next method updates
+        ListBox1.Tag = ""
 
         'Update the current information
         Call ListBox1_SelectedValueChanged(Nothing, Nothing)
@@ -382,7 +522,7 @@ Public Class Form1
                             If (incomingDataStart = True) Then
                                 'Checksum of string
                                 If (incomingChar = "&") Then
-                                    incomingDataNumUntilEnd = 5
+                                    incomingDataNumUntilEnd = 6
                                 End If
 
                                 'Add to queue
@@ -428,12 +568,49 @@ Public Class Form1
         handleIncomingData(compiledString)
     End Sub
 
+    Private Function handleRockData(rockName As String) As Integer
+        Dim i As Integer = 0
+        Dim tempRock As rock
+
+        For Each thisRock As rock In rockList
+            If (InStr(thisRock.rockName, rockName)) Then
+                thisRock.updatedString = "[-UPDATED--UPDATED-]"
+                thisRock.updatedAnimationCount = thisRock.updatedString.Length + 6
+                Return i
+            End If
+
+            i = i + 1
+        Next
+
+        tempRock = New rock
+        tempRock.rockName = "Rock " + rockName
+        rockCount = rockCount + 1
+        tempRock.numDetections = 0
+        tempRock.posLatitudeDeg = 0
+        tempRock.posLatitudeMinute = 0
+        tempRock.posLatitudeSecond = 0
+        tempRock.posLongitudeDeg = 0
+        tempRock.posLongitudeMinute = 0
+        tempRock.posLongitudeSecond = 0
+        tempRock.dataIgnored = False
+        tempRock.status = "Initial Incoming Data"
+        tempRock.batteryLevel = 0
+        tempRock.updatedString = "[-UPDATED--UPDATED-]"
+        tempRock.updatedAnimationCount = tempRock.updatedString.Length + 6
+        rockList.Add(tempRock)
+        AddRockToList(tempRock)
+
+        Return i
+    End Function
+
     Private Sub handleIncomingData(incomingString As String)
         Dim stringPortionPos As Integer = 0
         Dim message_id As String = ""
         Dim module_id As String = ""
         Dim ham_message As String = ""
         Dim checksum As UInteger = 0
+        Dim thisRockID As Integer
+        Dim thisRock As rock
 
         'Needs to contain checksum identifier
         If (Not incomingString.Contains("&")) Then
@@ -445,7 +622,7 @@ Public Class Form1
             incomingString = incomingString.Substring(1)
 
             'Determine checksum
-            checksum = CInt(incomingString.Substring(incomingString.LastIndexOf("&") + 1, 4))
+            checksum = CInt(incomingString.Substring(incomingString.LastIndexOf("&") + 1, 5))
             incomingString = incomingString.Substring(0, incomingString.LastIndexOf("&"))
 
             'Determine message id
@@ -457,18 +634,29 @@ Public Class Form1
             'Determine message
             ham_message = incomingString.Split(";")(2)
 
+            thisRockID = handleRockData(module_id)
+            thisRock = rockList(thisRockID)
+
+            Select Case message_id
+                Case "G"
+                    thisRock.posLatitudeDeg = ham_message.Split(",")(1).Substring(0, 2)
+                    thisRock.posLatitudeMinute = ham_message.Split(",")(1).Substring(2, 2)
+                    thisRock.posLatitudeSecond = ham_message.Split(",")(1).Substring(5)
+
+                    thisRock.posLongitudeDeg = ham_message.Split(",")(3).Substring(0, 3)
+                    thisRock.posLongitudeMinute = ham_message.Split(",")(3).Substring(3, 2)
+                    thisRock.posLongitudeSecond = ham_message.Split(",")(3).Substring(6)
+
+                Case "S"
+
+                Case "D"
+
+            End Select
+
+
         Catch ex As Exception
             Exit Sub
         End Try
-
-        Select Case message_id
-            Case "G"
-
-            Case "S"
-
-            Case "D"
-
-        End Select
     End Sub
 
     Private Sub squelchBar_Scroll(sender As Object, e As EventArgs) Handles squelchBar.Scroll
@@ -493,6 +681,7 @@ Public Class Form1
         'Draw single line
         Dim xPos As Integer = monitorBar.Location.X + monitorBar.Width * squelchBar.Value / (monitorBar.Maximum - monitorBar.Minimum)
         e.Graphics.FillRectangle(blackBrush, xPos, monitorBar.Location.Y + 1, 5, monitorBar.Size.Height - 2)
+
     End Sub
 
     Private Sub MMTTYBox_TextChanged(sender As Object, e As EventArgs) Handles MMTTYBox.TextChanged
@@ -504,6 +693,41 @@ Public Class Form1
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         'Hide MMTTY
         MMTTY_process = Process.Start("MMTTY.EXE", "-r -m -Z")
+    End Sub
+
+    Private Sub buttonZoomIn_Click(sender As Object, e As EventArgs) Handles buttonZoomIn.Click
+        'viewportScale += 1
+        'GroupBox2.Invalidate()
+ 
+
+        WebBrowser1.Navigate(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "GMaps.html"))
+    End Sub
+
+    Private Sub buttonZoomOut_Click(sender As Object, e As EventArgs) Handles buttonZoomOut.Click
+        viewportScale -= 1
+        GroupBox2.Invalidate()
+    End Sub
+
+    Private Sub buttonReset_Click(sender As Object, e As EventArgs) Handles buttonReset.Click
+        viewport = Nothing
+        GroupBox2.Invalidate()
+    End Sub
+
+    Private Sub GroupBox2_clickDown(sender As Object, e As MouseEventArgs) Handles GroupBox2.MouseDown
+        'Record the initial click location
+        xMouseDrag = e.X
+        yMouseDrag = e.Y
+    End Sub
+
+    Private Sub GroupBox2_mouseMove(sender As Object, e As MouseEventArgs) Handles GroupBox2.MouseMove
+        If (e.Button = Windows.Forms.MouseButtons.Left) Then
+            viewport.X = viewport.X + (e.X - xMouseDrag)
+            viewport.Y = viewport.Y + (e.Y - yMouseDrag)
+            GroupBox2.Invalidate()
+
+            xMouseDrag = e.X
+            yMouseDrag = e.Y
+        End If
     End Sub
 
 End Class

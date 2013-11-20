@@ -55,15 +55,17 @@ unsigned char processGPSData() {
  */
 void sendGPSStringHAM(unsigned int moduleID) {
 	char gpsHAMBuffer[MAX_GPS_BUFFER_LENGTH];
-	unsigned char i = 0;
+	unsigned char i = 7;
+	unsigned char j = 0;
 
 	//Need to copy the info into a new buffer
-	while(GPGGAinfo[i] != '\0') {
-		gpsHAMBuffer[i] = GPGGAinfo[i];
+	while(GPGGAinfo[i] != '*') {
+		gpsHAMBuffer[j] = GPGGAinfo[i];
 		i++;
+		j++;
 	} //while()
 
-	gpsHAMBuffer[i] = '\0';
+	gpsHAMBuffer[j] = '\0';
 
 	sendHAMString(gpsHAMBuffer, moduleID, 'G');
 //	queueEnqueue(radioHAMQueue, gpsHAMBuffer);
