@@ -12,7 +12,7 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyDescription("")> 
 <Assembly: AssemblyCompany("Duckworth")> 
 <Assembly: AssemblyProduct("Talon Rock Monitor")> 
-<Assembly: AssemblyCopyright("Copyright © Duckworth 2013")> 
+<Assembly: AssemblyCopyright("Copyright © USAFA 2013")> 
 <Assembly: AssemblyTrademark("")> 
 
 <Assembly: ComVisible(False)>
