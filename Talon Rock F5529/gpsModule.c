@@ -164,7 +164,7 @@ char isGPSFinished() {
 		compileGPSToString();
 
 		//Send coordinates to EXFIL node
-		addMessageQueue(&topQueuedMessage, GPS_MESSAGE, gpsPositionString);
+		addMessageQueue(GPS_MESSAGE, gpsPositionString);
 
 		return TRUE;
 	} //if()

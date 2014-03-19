@@ -4,13 +4,104 @@
 unsigned char gpsComplete = 0;
 char* gpsPositionString = NULL;
 const long long exfilAddress = EXFIL_XBEE_ADDR;
+message_queue* topQueuedMessage = NULL;
 
 #if EXFIL_NODE
 	long long sensorUGSTable[MAX_SENSOR_NETWORK_SIZE];
 	exfil_object exfilObject;
 #endif
 
-	message_queue* topQueuedMessage;
+
+void initRealTimeClock() {
+
+	//Setup TimerA0 to toggle at one second
+	TA0CCR0 = 32768-1;
+	TA0CTL = TASSEL_1 + MC_1 + TACLR;
+	TA0CCTL0 |= CCIE;
+
+} //initRealTimeClock()
+
+void handleMessageQueue() {
+	//msg in queue?
+		//foreach(msg to send)
+			//msg_init?
+				//send request to exfil
+				//(EXFIL) add self to list
+				//(EXFIL) move msg marker to ack
+			//msg_syn && msg_age > 120 sec
+				//reset age
+				//send request to exfil
+			//msg_ack && msg_age > (60sec/min*10min)
+				//reset age
+				//status = msg_syn
+				//send request to exfil
+			//msg_req && msg_age > (60sec/min*10min)
+				//reset age
+				//status = msg_syn
+				//send request to exfil
+		//<--foreach()
+
+	message_queue* current_message;
+
+	if (topQueuedMessage) {
+		current_message = topQueuedMessage;
+
+		while(current_message != NULL) {
+			switch(current_message->status) {
+			case MSG_INITIAL:
+				current_message->age = 0;
+#if EXFIL_NODE
+				//Some sly parameter passing so the exfil can send messages like a regular UGS
+				addQueuedNode(0, current_message->message);
+				current_message->status = MSG_EXFIL_FIN;
+#else
+				//(xbee) send message to exfil UGS
+				current_message->status = MSG_SYN;
+#endif
+				break;
+
+			case MSG_SYN:
+				if (current_message->age > 120) {
+					current_message->age = 0;
+					//(xbee) send request to exfil UGS
+				} //if()
+				break;
+
+			case MSG_EXFIL_ACK_WAIT:
+				if (current_message->age > 600) {
+					current_message->age = 0;
+					current_message->status = MSG_SYN;
+					//(xbee) send request to exfil UGS
+				} //if()
+				break;
+
+			case MSG_EXFIL_REQ:
+				//(xbee) send the actual message
+				break;
+
+			case MSG_EXFIL_ACK_REQ:
+				if (current_message->age > 120) {
+					current_message->age = 0;
+					current_message->status = MSG_SYN;
+					//(xbee) send request to exfil UGS
+				} //if()
+				break;
+
+			case MSG_EXFIL_FIN:
+				current_message = removeThisMessage(current_message);
+
+				if (!current_message) return;
+				break;
+
+			default: break;
+			} //switch
+
+			current_message->age++;
+			current_message = current_message->next_message;
+		} //while()
+	} //if()
+
+} //handleMessageQueue()
 
 /*
  * Inputs
@@ -78,14 +169,14 @@ unsigned int stringChecksum(unsigned char* stringToChecksum) {
 	return checkSum;
 } //stringChecksum()
 
-void addMessageQueue(message_queue** topQueuedMessage, char* messageType, char* messageToAdd) {
+void addMessageQueue(char* messageType, char* messageToAdd) {
 
 	//Create the node pointer
 	message_queue* new_message = malloc(sizeof(message_queue));
 
 	//Initialize variable
 	new_message->next_message = NULL;
-	new_message->status = INITIAL;
+	new_message->status = MSG_INITIAL;
 	new_message->age = 0;
 
 	//Allocate space for the message (+2 => For null char and semicolon)
@@ -96,32 +187,63 @@ void addMessageQueue(message_queue** topQueuedMessage, char* messageType, char* 
 	strcat(new_message->message, messageToAdd);	//Append the message
 
 
-	if (*topQueuedMessage != NULL) {
-		lastQueuedMessage(*topQueuedMessage)->next_message = new_message;
+	if (topQueuedMessage != NULL) {
+		lastQueuedMessage()->next_message = new_message;
 	} else {
-		*topQueuedMessage = new_message;
+		topQueuedMessage = new_message;
 	} //if-else()
 } //addMessageQueue()
 
-void removeTopMessage(message_queue** topQueuedMessage) {
+void removeTopMessage() {
 
 	message_queue* temp_node_pointer;
 
 	//Check to see if the top node is empty
-	if (!*topQueuedMessage) return;
+	if (!topQueuedMessage) return;
 
 	//Save node pointer
-	temp_node_pointer = *topQueuedMessage;
+	temp_node_pointer = topQueuedMessage;
 
 	//Redirect top pointer
-	*topQueuedMessage = temp_node_pointer->next_message;
+	topQueuedMessage = temp_node_pointer->next_message;
 
 	//Free resources
 	free(temp_node_pointer->message);
 	free(temp_node_pointer);
 } //removeTopMessage()
 
-message_queue* lastQueuedMessage(message_queue* topQueuedMessage) {
+message_queue* removeThisMessage(message_queue* message_to_remove) {
+
+	message_queue* temp_node_pointer = topQueuedMessage;
+
+	//The top message is the message we would like to remove
+	if (topQueuedMessage ==  message_to_remove) {
+		removeTopMessage();
+		return topQueuedMessage;
+	} //if()
+
+	//Should not be the top message at this point
+	while(temp_node_pointer->next_message != NULL) {
+
+		//Check for a match
+		if (temp_node_pointer->next_message == message_to_remove) {
+			//Redirect next_message pointer
+			temp_node_pointer->next_message = message_to_remove->next_message;
+
+			//Free data
+			free(message_to_remove->message);
+			free(message_to_remove);
+
+			return temp_node_pointer->next_message;
+		} //if()
+
+		temp_node_pointer = temp_node_pointer->next_message;
+	} //while()
+
+	return NULL;
+} //removeThisMessage()
+
+message_queue* lastQueuedMessage() {
 	message_queue* tempMessageQueuePointer = topQueuedMessage;
 
 	while(tempMessageQueuePointer->next_message) {
@@ -131,7 +253,7 @@ message_queue* lastQueuedMessage(message_queue* topQueuedMessage) {
 	return tempMessageQueuePointer;
 } //lastQueuedMessage()
 
-void addQueuedNode(exfil_queue** topExfilQueue, unsigned int nodeToAdd) {
+void addQueuedNode(unsigned int nodeToAdd, char* messageToAdd) {
 
 	//Create new node
 	exfil_queue* new_node = malloc(sizeof(exfil_queue));
@@ -139,51 +261,128 @@ void addQueuedNode(exfil_queue** topExfilQueue, unsigned int nodeToAdd) {
 	//Initialize variable
 	new_node->next_queued_node = NULL;
 	new_node->node_number = nodeToAdd;
+	new_node->age = 0;
+	new_node->status = EXFIL_REQ_ACK;
 
-	if (*topExfilQueue != NULL) {
-		lastQueuedNode(*topExfilQueue)->next_queued_node = new_node;
+	if (messageToAdd) {
+		new_node->message = malloc(sizeof(char) * (strlen(messageToAdd) + 1));
+		strcpy(new_node->message, messageToAdd);
+	} //if()
+
+	if (exfilObject.topExfilQueue != NULL) {
+		lastQueuedNode()->next_queued_node = new_node;
 	} else {
-		*topExfilQueue = new_node;
+		exfilObject.topExfilQueue = new_node;
 	} //if-else()
 } //addQueuedNode()
 
-void removeTopQueuedNode(exfil_queue** topExfilQueue) {
+void removeTopQueuedNode() {
 
 	exfil_queue* temp_exfil_pointer;
 
 	//Check to see if the top node is empty
-	if (!*topExfilQueue) return;
+	if (!exfilObject.topExfilQueue) return;
 
 	//Save node pointer
-	temp_exfil_pointer = *topExfilQueue;
+	temp_exfil_pointer = exfilObject.topExfilQueue;
 
 	//Redirect top pointer
-	*topExfilQueue = temp_exfil_pointer->next_queued_node;
+	exfilObject.topExfilQueue = temp_exfil_pointer->next_queued_node;
 
 	//Free resources
+	free(temp_exfil_pointer->message);
 	free(temp_exfil_pointer);
 } //removeTopQueuedNode()
 
-exfil_queue* lastQueuedNode(exfil_queue* topExfilQueue) {
-	exfil_queue* tempExfilQueuePointer = topExfilQueue;
+exfil_queue* removeThisQueuedMessage(exfil_queue* message_to_remove) {
 
-	while(tempExfilQueuePointer->next_queued_node) {
+	exfil_queue* temp_node_pointer = exfilObject.topExfilQueue;
+
+	//The top message is the message we would like to remove
+	if (exfilObject.topExfilQueue ==  message_to_remove) {
+		removeTopQueuedNode();
+		return exfilObject.topExfilQueue;
+	} //if()
+
+	//Should not be the top message at this point
+	while(temp_node_pointer->next_queued_node != NULL) {
+
+		//Check for a match
+		if (temp_node_pointer->next_queued_node == message_to_remove) {
+			//Redirect next_message pointer
+			temp_node_pointer->next_queued_node = message_to_remove->next_queued_node;
+
+			//Free data
+			free(message_to_remove->next_queued_node);
+			free(message_to_remove);
+
+			return temp_node_pointer->next_queued_node;
+		} //if()
+
+		temp_node_pointer = temp_node_pointer->next_queued_node;
+	} //while()
+
+	return NULL;
+} //removeThisQueuedMessage
+
+exfil_queue* lastQueuedNode() {
+	exfil_queue* tempExfilQueuePointer = exfilObject.topExfilQueue;
+
+	while(tempExfilQueuePointer->next_queued_node != NULL) {
 		tempExfilQueuePointer = tempExfilQueuePointer->next_queued_node;
 	} //while()
 
-	return topExfilQueue;
+	//TODO: Remove the following line, bad code.
+	//return exfilObject.topExfilQueue;
+
+	return tempExfilQueuePointer;
 } //lastQueuedNode()
 
-char isXbeeInTable(long long xbeeAddress) {
+int addXbee(long long xbeeAddress) {
 
+	int i, indexPosition = findXbee(xbeeAddress);
+
+	//Check to see if the xbee is already in the table
+	if (indexPosition != -1) return indexPosition;
+
+	for(i=0; i<MAX_SENSOR_NETWORK_SIZE; i++) {
+		if (sensorUGSTable[i] == 0x00) {
+			sensorUGSTable[i] = xbeeAddress;
+
+			return i;
+		} //if()
+	} //for()
+
+	//Could not add the xbee to the table
+	return -1;
+} //addXbee()
+
+int findXbee(long long xbeeAddress) {
 	int i;
 
 	for(i=0; i<MAX_SENSOR_NETWORK_SIZE; i++) {
 		if (sensorUGSTable[i] == xbeeAddress) {
-			return TRUE;
+			return i;
 		} //if()
 	} //for()
 
 	//XBee not found
-	return FALSE;
-} //isXbeeInTable
+	return -1;
+} //isXbeeInTable()
+
+// Timer A0 interrupt service routine
+#pragma vector=TIMER0_A0_VECTOR
+__interrupt void Timer_A(void)
+{
+#if !EXFIL_NODE
+	//Add to timer
+	raspberryPISec++;
+#else
+	if (exfilObject.time_since_last_tx != -1) {
+		exfilObject.time_since_last_tx++;
+	} //if()
+#endif
+
+	//Wake CPU -- allows us to trigger message checks every second
+	__bic_SR_register_on_exit(LPM0_bits);
+} //Timer_A()

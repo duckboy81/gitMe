@@ -38,6 +38,8 @@
 
 /* Define functions */
 void initializeExfilRadio(void);
+void handleExfilQueue(void);
+
 unsigned char sendHAMCharToBaudot(char c, const char *array);
 char sendHAMString(char* stringToSend, unsigned int moduleID);
 void sendHAMSetMark(void);

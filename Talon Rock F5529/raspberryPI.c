@@ -11,15 +11,6 @@
 unsigned int raspberryPISec = 0;
 unsigned int raspberryPIEnabled = 0;
 
-void initRaspberryPI(void) {
-
-	//Setup TimerA0 to toggle at one second
-	TA0CCR0 = 32768-1;
-	TA0CTL = TASSEL_1 + MC_1 + TACLR;
-	TA0CCTL0 |= CCIE;
-
-} //initRaspberryPI()
-
 void handleRaspberryPI() {
 
 	if (!raspberryPIEnabled) {
@@ -47,7 +38,7 @@ __interrupt void Port_1(void)
 	switch(P1IFG) {
 	case BIT6:
 		//Add message to message queue
-		addMessageQueue(&topQueuedMessage, DETECT_MESSAGE, "");
+		addMessageQueue(DETECT_MESSAGE, "");
 		break;
 	default: break;
 	} //switch()
@@ -55,14 +46,3 @@ __interrupt void Port_1(void)
 
 	P1IFG &= ~BIT6;                         // Clear P1.6 IFG
 } //Port_1()
-
-// Timer A0 interrupt service routine
-#pragma vector=TIMER0_A0_VECTOR
-__interrupt void Timer_A(void)
-{
-	//Add to timer
-	raspberryPISec++;
-
-	//Wake CPU
-	__bic_SR_register_on_exit(LPM0_bits);
-} //Timer_A()

@@ -41,8 +41,12 @@ void initializeExfilRadio() {
 
 	//Initialize object
 	exfilObject.string_to_send = NULL;
-	exfilObject.topExfilQueued = NULL;
+	exfilObject.topExfilQueue = NULL;
+	exfilObject.twiddle_time = 0;
 	exfilObject.ready_to_send = 1;
+
+	//The first entry in the table is always itself
+	exfilObject.xbee_table[0] = EXFIL_XBEE_ADDR;
 
 	//Just a test
 	//Disable 75 baud interrupt
@@ -50,6 +54,84 @@ void initializeExfilRadio() {
 	TB0CCTL0 &= ~BIT4;
 
 } //initializeExfilRadio()
+
+void handleExfilQueue() {
+
+	exfil_queue* temp_node_pointer;
+
+	//Are there messages in the queue
+	if (exfilObject.topExfilQueue) {
+
+		temp_node_pointer = exfilObject.topExfilQueue;
+
+		//Increase the top message's age
+		temp_node_pointer->age++;
+
+		//If the radio is not ready, no point in dealing with the other messages
+		if (!isHAMReady()) return;
+
+		//Check on first node
+		switch(temp_node_pointer->status) {
+		case EXFIL_ACCEPT_MSG:
+			temp_node_pointer->status = EXFIL_ACCEPT_WAIT;
+			//(xbee) tell the node it is allowed to send its message
+			break;
+
+		case EXFIL_ACCEPT_WAIT:
+			//Delete the message after 30 seconds
+			if (temp_node_pointer->age > 30) {
+				temp_node_pointer = removeThisQueuedMessage(temp_node_pointer);
+			} //if()
+			break;
+
+		case EXFIL_ACCEPT_ACK:
+
+			if (sendHAMString(temp_node_pointer->message, temp_node_pointer->node_number)) {
+				temp_node_pointer->status = EXFIL_FIN;
+
+#if !EXFIL_NODE
+				//(xbee) tell the node the message it sent was accepted
+#endif
+			} //if()
+			break;
+
+		case EXFIL_FIN:
+			temp_node_pointer = removeThisQueuedMessage(temp_node_pointer);
+			break;
+
+		default: break;
+		} //switch()
+
+		/* Handle the rest of the message */
+		while(temp_node_pointer != NULL) {
+			switch(temp_node_pointer->status) {
+			case EXFIL_REQ_ACK:
+#if EXFIL_NODE
+				if (temp_node_pointer->node_number == 0) {
+					temp_node_pointer->status = EXFIL_ACCEPT_ACK;
+					break;
+				} //if()
+#endif
+
+				temp_node_pointer->status = EXFIL_REQ_WAIT;
+				//(xbee) tell the node to wait
+				break;
+
+			case EXFIL_REQ_WAIT:
+				//Nothing required -- the node should continue to wait
+				break;
+
+			default: break;
+			} //switch()
+
+			temp_node_pointer = temp_node_pointer->next_queued_node;
+		} //while()
+
+	} //if()
+
+	//Turn off the PTT button if enough time has elapsed
+	//if (exfilObject.time_since_last_tx > 5)
+} //handleExfilQueue()
 
 enum baudot_mode
 {
@@ -96,15 +178,13 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 	exfilObject.ready_to_send = 0;
 
 	//Allocate space for send string
-	if (exfilObject.string_to_send) {
-		free(exfilObject.string_to_send);
-	} //if()
-
 	/*
 	 * Space for 2-Figure shifts, 1-DollarSign, 1-Null terminator,
-	 * 	n-the string itself, 5-checksum, 1-line feed
+	 * 	n-the string itself, 5-checksum, 1-line feed, 1-ampersand, 5-module number, 1-semicolon
 	 */
-	exfilObject.string_to_send = malloc(sizeof(char) * (10 + strlen(stringToSend)));
+	do {
+		exfilObject.string_to_send = realloc(exfilObject.string_to_send, sizeof(char) * (17 + strlen(stringToSend) * 2 + 1));
+	} while(exfilObject.string_to_send == NULL);
 
 	//Disable 75 baud interrupt
 //	TA0CCTL0 = 0x00;
@@ -237,12 +317,20 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 	//Reset bit position
 	exfilObject.bit_position = 0;
 
+	//Reset twiddle time
+	exfilObject.twiddle_time = 0;
+
 	//Reset baud PWM
 	//TODO: Is this needed?
 	TB0CCTL1 = OUTMOD_7;
 
+	/* Enabling the PTT button is now handled
+	 * by a timer system in the ISR.  This ensures
+	 * the radio has some pause before it transmits
+	 * more data.
+	 */
 	//Enable PTT
-	enablePTT();
+	//enablePTT();
 
 	//Enable 75 baud interrupt
 	TB0CCTL0 |= BIT4;
@@ -282,16 +370,34 @@ __interrupt void TA11_ISR(void) {
 
 	unsigned char currByte;
 
-	//Prep byte
-	currByte = exfilObject.string_to_send[exfilObject.string_position];
+	//Reset the PTT timer
+	if (exfilObject.time_since_last_tx > MIN_TIME_BETWEEN_EXFIL_MSGS) {
 
+		exfilObject.time_since_last_tx = -1;
+		enablePTT();
+
+	} else if (exfilObject.time_since_last_tx != -1) {
+		return;
+	} //if()
+
+	//Prep byte
+	if (exfilObject.twiddle_time != -1) {
+		currByte = 0x1F;
+	} else {
+		currByte = exfilObject.string_to_send[exfilObject.string_position];
+		exfilObject.twiddle_time = -1;
+	} //if-else
 
 	if (currByte == '\0') {
 		exfilObject.ready_to_send = 1;
+
 		disablePTT();
 
 		//Disable 75 baud interrupt
 		TB0CCTL0 = 0x00;
+
+		//Reset hot mic timer
+		exfilObject.time_since_last_tx = 0;
 
 		//Wake CPU
 		//__bic_SR_register_on_exit(LPM0_bits);
@@ -306,6 +412,13 @@ __interrupt void TA11_ISR(void) {
 			sendHAMSetMark();
 			exfilObject.bit_position = 0;
 			exfilObject.string_position++;
+
+			if (exfilObject.twiddle_time > PRE_MSG_TWIDDLES) {
+				exfilObject.twiddle_time = -1;
+				exfilObject.string_position = 0;
+			} else if (exfilObject.twiddle_time != -1) {
+				exfilObject.twiddle_time++;
+			} //if()
 		} else {
 			//Determine if the current BIT in the current BYTE is a one or zero
 			if (currByte & (1 << (exfilObject.bit_position - 1) )) {

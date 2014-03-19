@@ -11,7 +11,5 @@
 /* Define functions */
 void initRaspberryPI(void);
 void handleRaspberryPI(void);
-__interrupt void Port_1(void);
-
 
 #endif /* RASPBERRYPI_H_ */
