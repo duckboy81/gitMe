@@ -17,8 +17,8 @@ Public Class Form1
     Dim numChar2ShowUpdate As Integer = 14
     'Dim configBaudRate As Integer = 5600 '(Actual Baud rate * 100) = this configuration
     Dim configBaudRate As Integer = 7500 '(Actual Baud rate * 100) = this configuration
-    Dim configMarkFreq As Integer = 2100 'Hz
-    Dim configSpaceFreq As Integer = 2450 'Hz
+    Dim configMarkFreq As Integer = 2200 'Hz
+    Dim configSpaceFreq As Integer = 2540 'Hz
 
     Dim configSquelch As Integer = 0 'TODO
 
@@ -598,11 +598,11 @@ Public Class Form1
             checksum = CInt(incomingString.Substring(incomingString.LastIndexOf("&") + 1, 5))
             incomingString = incomingString.Substring(0, incomingString.LastIndexOf("&"))
 
-            'Determine message id
-            message_id = incomingString.Split(";")(0)
-
             'Determine module id
-            module_id = incomingString.Split(";")(1)
+            module_id = incomingString.Split(";")(0)
+
+            'Determine message id
+            message_id = incomingString.Split(";")(1)
 
             'Determine message
             ham_message = incomingString.Split(";")(2)
@@ -610,13 +610,13 @@ Public Class Form1
             'Determine if the message is valid
             checksumCalculated = 0
 
-            For Each currChar As Char In ham_message
+            For Each currChar As Char In message_id & ";" & ham_message
                 checksumCalculated += Asc(currChar)
             Next
 
             checksumCalculated = Not (checksumCalculated)
             checksumCalculated = &HFFFF And checksumCalculated 'This will prevent overflow exception (yes we want an overflow)
-            checksumCalculated += Asc(message_id)
+            'checksumCalculated += Asc(message_id)
             checksumCalculated += module_id
 
             checksumCalculated = &HFFFF And checksumCalculated
@@ -633,18 +633,18 @@ Public Class Form1
                 Case "G"
                     thisRock.posLatitudeDeg = ham_message.Split(",")(1).Substring(0, 2)
                     thisRock.posLatitudeMinute = ham_message.Split(",")(1).Substring(2, 2)
-                    thisRock.posLatitudeSecond = ham_message.Split(",")(1).Substring(5) / 10
+                    thisRock.posLatitudeSecond = ham_message.Split(",")(1).Substring(4) * 60
 
                     thisRock.posLongitudeDeg = ham_message.Split(",")(3).Substring(0, 3)
                     thisRock.posLongitudeMinute = ham_message.Split(",")(3).Substring(3, 2)
-                    thisRock.posLongitudeSecond = ham_message.Split(",")(3).Substring(6) / 10
+                    thisRock.posLongitudeSecond = ham_message.Split(",")(3).Substring(5) * 60
 
                     'Check for negativity
                     If (ham_message.Split(",")(2).Contains("S")) Then
                         thisRock.posLatitudeDeg *= -1
                     End If
 
-                    If (ham_message.Split(",")(2).Contains("W")) Then
+                    If (ham_message.Split(",")(4).Contains("W")) Then
                         thisRock.posLongitudeDeg *= -1
                     End If
 
@@ -740,11 +740,28 @@ Public Class Form1
     End Sub
 
     Private Function RockToLatitude(thisRock As rock) As Double
-        Return thisRock.posLatitudeDeg + thisRock.posLatitudeMinute / 60 + thisRock.posLatitudeSecond / 3600
+        Dim latitudeDec As Double = Math.Abs(thisRock.posLatitudeDeg) + _
+            Math.Abs(thisRock.posLatitudeMinute / 60) + _
+            Math.Abs(thisRock.posLatitudeSecond / 3600)
+
+
+        If (thisRock.posLatitudeDeg < 0) Then
+            Return -1 * latitudeDec
+        Else
+            Return latitudeDec
+        End If
     End Function
 
     Private Function RockToLongitude(thisRock As rock) As Double
-        Return thisRock.posLongitudeDeg + thisRock.posLongitudeMinute / 60 + thisRock.posLongitudeSecond / 3600
+        Dim longitudeDec As Double = Math.Abs(thisRock.posLongitudeDeg) + _
+            Math.Abs(thisRock.posLongitudeMinute / 60) + _
+            Math.Abs(thisRock.posLongitudeSecond / 3600)
+
+        If (thisRock.posLongitudeDeg < 0) Then
+            Return -1 * longitudeDec
+        Else
+            Return longitudeDec
+        End If
     End Function
 
     Private Sub ResetDetect_Click(sender As Object, e As EventArgs) Handles ResetDetect.Click
