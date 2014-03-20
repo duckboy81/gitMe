@@ -15,10 +15,9 @@ void handleRaspberryPI() {
 
 	if (!raspberryPIEnabled) {
 		if (raspberryPISec > MIN_RASP_PI_WAIT) {
-			//Disable timer interrupt
-			//TODO: Does this work? Does it interfere with other bits on TACTL?
-			TA0CTL = MC_0;
-			TA0CCTL0 &= ~CCIE;
+			//Activate LED
+			P1DIR |= BIT0;//Set LEDs to output
+			P1OUT |= BIT0;//Toggle LEDs
 
 			//Enable raspberry pi
 			P1DIR &= ~BIT6;                           // Set P1.6 to input direction
@@ -35,14 +34,17 @@ void handleRaspberryPI() {
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void)
 {
-	switch(P1IFG) {
-	case BIT6:
-		//Add message to message queue
-		addMessageQueue(DETECT_MESSAGE, "");
-		break;
-	default: break;
-	} //switch()
+	//Toggle an LED
+	P1OUT ^= BIT0;
 
+//	switch(P1IFG) {
+//	case BIT6:
+	//Add message to message queue
+	addMessageQueue(DETECT_MESSAGE, "");
+//		break;
+//	default: break;
+//	} //switch()
 
-	P1IFG &= ~BIT6;                         // Clear P1.6 IFG
+//	P1IFG &= ~BIT6;                         // Clear P1.6 IFG
+	P1IFG = 0; //Clear the IFG
 } //Port_1()

@@ -7,6 +7,10 @@
 
 #include "commonInclude.h"
 #include "exfilRadio.h"
+#include "XBeeModule.h"
+
+exfil_object exfilObject;
+
 
 /* Baudot table */
 static const char letters_arr[33] = "\000E\nA SIU\rDRJNFCKTZLWHYPQOBG\000MXV\000";
@@ -72,9 +76,15 @@ void handleExfilQueue() {
 
 		//Check on first node
 		switch(temp_node_pointer->status) {
+		case EXFIL_REQ_WAIT:
+			//The top node is waiting for approval, the radio is ready, give the node approval!
+			temp_node_pointer->status = EXFIL_ACCEPT_MSG;
+
 		case EXFIL_ACCEPT_MSG:
 			temp_node_pointer->status = EXFIL_ACCEPT_WAIT;
+
 			//(xbee) tell the node it is allowed to send its message
+			sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_APPROVAL);
 			break;
 
 		case EXFIL_ACCEPT_WAIT:
@@ -89,9 +99,10 @@ void handleExfilQueue() {
 			if (sendHAMString(temp_node_pointer->message, temp_node_pointer->node_number)) {
 				temp_node_pointer->status = EXFIL_FIN;
 
-#if !EXFIL_NODE
+//#if EXFIL_NODE
 				//(xbee) tell the node the message it sent was accepted
-#endif
+				sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_MSG_ACK);
+//#endif
 			} //if()
 			break;
 
@@ -115,6 +126,7 @@ void handleExfilQueue() {
 
 				temp_node_pointer->status = EXFIL_REQ_WAIT;
 				//(xbee) tell the node to wait
+				sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_REQ_ACK);
 				break;
 
 			case EXFIL_REQ_WAIT:
@@ -183,7 +195,7 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 	 * 	n-the string itself, 5-checksum, 1-line feed, 1-ampersand, 5-module number, 1-semicolon
 	 */
 	do {
-		exfilObject.string_to_send = realloc(exfilObject.string_to_send, sizeof(char) * (17 + strlen(stringToSend) * 2 + 1));
+		exfilObject.string_to_send = realloc(exfilObject.string_to_send, sizeof(char) * (strlen(stringToSend) * 2 + 18));
 	} while(exfilObject.string_to_send == NULL);
 
 	//Disable 75 baud interrupt
@@ -257,7 +269,9 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 				currentMode = FIGURES;
 			} //if()
 
-			exfilObject.string_to_send[j] = currChar;
+			if (currChar != 0) {
+				exfilObject.string_to_send[j] = currChar;
+			} //if()
 	    } //if-else
 
 	    i++;

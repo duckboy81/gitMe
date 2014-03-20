@@ -1,4 +1,5 @@
 #include "commonInclude.h"
+#include "XBeeModule.h"
 
 //Initialize global variables
 unsigned char gpsComplete = 0;
@@ -6,10 +7,6 @@ char* gpsPositionString = NULL;
 const long long exfilAddress = EXFIL_XBEE_ADDR;
 message_queue* topQueuedMessage = NULL;
 
-#if EXFIL_NODE
-	long long sensorUGSTable[MAX_SENSOR_NETWORK_SIZE];
-	exfil_object exfilObject;
-#endif
 
 
 void initRealTimeClock() {
@@ -55,15 +52,18 @@ void handleMessageQueue() {
 				addQueuedNode(0, current_message->message);
 				current_message->status = MSG_EXFIL_FIN;
 #else
-				//(xbee) send message to exfil UGS
+				//(xbee) send message req to exfil UGS
 				current_message->status = MSG_SYN;
+				sendMessage(EXFIL_XBEE_ADDR, NETWORK_NODE_REQ);
 #endif
 				break;
 
 			case MSG_SYN:
 				if (current_message->age > 120) {
 					current_message->age = 0;
+
 					//(xbee) send request to exfil UGS
+					sendMessage(EXFIL_XBEE_ADDR, NETWORK_NODE_REQ);
 				} //if()
 				break;
 
@@ -71,19 +71,26 @@ void handleMessageQueue() {
 				if (current_message->age > 600) {
 					current_message->age = 0;
 					current_message->status = MSG_SYN;
+
 					//(xbee) send request to exfil UGS
+					sendMessage(EXFIL_XBEE_ADDR, NETWORK_NODE_REQ);
 				} //if()
 				break;
 
 			case MSG_EXFIL_REQ:
+				current_message->status = MSG_EXFIL_ACK_REQ;
+
 				//(xbee) send the actual message
+				sendMessage(EXFIL_XBEE_ADDR, current_message->message);
 				break;
 
 			case MSG_EXFIL_ACK_REQ:
 				if (current_message->age > 120) {
 					current_message->age = 0;
 					current_message->status = MSG_SYN;
+
 					//(xbee) send request to exfil UGS
+					sendMessage(EXFIL_XBEE_ADDR, NETWORK_NODE_REQ);
 				} //if()
 				break;
 
@@ -194,6 +201,57 @@ void addMessageQueue(char* messageType, char* messageToAdd) {
 	} //if-else()
 } //addMessageQueue()
 
+void handleMessageReqAck(void) {
+
+	/* Find the first message waiting for a response to this req ack */
+
+	message_queue* temp_node_pointer = topQueuedMessage;
+
+	while(temp_node_pointer != NULL) {
+		if (temp_node_pointer->status == MSG_SYN) {
+			temp_node_pointer->status = MSG_EXFIL_ACK_WAIT;
+			return;
+		} //if()
+
+		temp_node_pointer = temp_node_pointer->next_message;
+	} //while()
+
+} //handleMessageReqAck()
+
+void handleMessageApproval(void) {
+
+	/* Find the first message waiting for approval to send */
+
+	message_queue* temp_node_pointer = topQueuedMessage;
+
+	while(temp_node_pointer != NULL) {
+		if (temp_node_pointer->status == MSG_SYN || temp_node_pointer->status == MSG_EXFIL_ACK_WAIT) {
+			temp_node_pointer->status = MSG_EXFIL_REQ;
+			return;
+		} //if()
+
+		temp_node_pointer = temp_node_pointer->next_message;
+	} //while()
+
+} //handleMessageApproval()
+
+void handleMessageAck(void) {
+
+	/* Find the first message waiting for a response on it's message tx */
+
+	message_queue* temp_node_pointer = topQueuedMessage;
+
+	while(temp_node_pointer != NULL) {
+		if (temp_node_pointer->status == MSG_EXFIL_ACK_REQ) {
+			temp_node_pointer->status = MSG_EXFIL_FIN;
+			return;
+		} //if()
+
+		temp_node_pointer = temp_node_pointer->next_message;
+	} //while()
+
+} //handleMessageAck()
+
 void removeTopMessage() {
 
 	message_queue* temp_node_pointer;
@@ -259,6 +317,7 @@ void addQueuedNode(unsigned int nodeToAdd, char* messageToAdd) {
 	exfil_queue* new_node = malloc(sizeof(exfil_queue));
 
 	//Initialize variable
+	new_node->message = NULL;
 	new_node->next_queued_node = NULL;
 	new_node->node_number = nodeToAdd;
 	new_node->age = 0;
@@ -313,7 +372,7 @@ exfil_queue* removeThisQueuedMessage(exfil_queue* message_to_remove) {
 			temp_node_pointer->next_queued_node = message_to_remove->next_queued_node;
 
 			//Free data
-			free(message_to_remove->next_queued_node);
+			free(message_to_remove->message);
 			free(message_to_remove);
 
 			return temp_node_pointer->next_queued_node;
@@ -346,8 +405,8 @@ int addXbee(long long xbeeAddress) {
 	if (indexPosition != -1) return indexPosition;
 
 	for(i=0; i<MAX_SENSOR_NETWORK_SIZE; i++) {
-		if (sensorUGSTable[i] == 0x00) {
-			sensorUGSTable[i] = xbeeAddress;
+		if (exfilObject.xbee_table[i] == 0x00) {
+			exfilObject.xbee_table[i] = xbeeAddress;
 
 			return i;
 		} //if()
@@ -361,7 +420,7 @@ int findXbee(long long xbeeAddress) {
 	int i;
 
 	for(i=0; i<MAX_SENSOR_NETWORK_SIZE; i++) {
-		if (sensorUGSTable[i] == xbeeAddress) {
+		if (exfilObject.xbee_table[i] == xbeeAddress) {
 			return i;
 		} //if()
 	} //for()

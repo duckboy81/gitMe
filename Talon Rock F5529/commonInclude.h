@@ -1,6 +1,7 @@
 #include "msp430f5529.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 //Loads code explicit to exfil or sensor node
 #define EXFIL_NODE 1
@@ -15,7 +16,7 @@
 #define DETECT_MESSAGE	"D"
 
 /* main.c */
-#define EXFIL_XBEE_ADDR 0xABCDEFABCDEF2014
+#define EXFIL_XBEE_ADDR 0x0013A20040B2C0D2
 #define MAX_SENSOR_NETWORK_SIZE 100			//Max size of 99,999 nodes
 
 /* gpsModule.h */
@@ -34,7 +35,26 @@
 #define PRE_MSG_TWIDDLES 40
 
 /* raspberryPI.h */
-#define MIN_RASP_PI_WAIT 10		//Time in seconds
+#define MIN_RASP_PI_WAIT 1		//Time in seconds
+
+/* XBeeModule.h */
+#define MAX_XBEE_BUFFER_LEN 100
+
+  // NODE -> EXFIL
+#define NETWORK_NODE_REQ "0"		//A node is requesting to send a message
+#define NETWORK_NODE_REQ_INT 48
+
+  // EXFIL -> NODE
+#define NETWORK_EX_REQ_ACK "1"	//The exfil is acknowledging the node's request
+#define NETWORK_EX_REQ_ACK_INT 49
+
+#define NETWORK_EX_APPROVAL "2"	//The exfil is providing a node with approval to send a message
+#define NETWORK_EX_APPROVAL_INT 50
+
+#define NETWORK_EX_MSG_ACK "3"	//The exfil has successfully received the message
+#define NETWORK_EX_MSG_ACK_INT 51
+
+
 
 /* All files */
 #define TRUE    1
@@ -67,6 +87,20 @@ typedef struct exfil_object {
 	int time_since_last_tx;		//Used to make sure radio does not get destroyed from over use
 } exfil_object;
 
+typedef struct xbee_object {
+	char bufferSpace[MAX_XBEE_BUFFER_LEN];
+	signed char bufferPosition;
+	//signed char bufferRemaining;
+
+	unsigned char xbeeFrameType;
+	unsigned int xbeeMessageLength;
+	unsigned long long xbeeSenderAddr;
+	unsigned int xbeeSenderNodeAddr;
+	//unsigned char xbeeData[10] = {0};
+	//unsigned char xbeeFlag=0; //flag that there is a message to process; 0=no message; 1=is message
+
+} xbee_object;
+
 enum message_status
 {
   MSG_INITIAL,			//Exfil does not know about message
@@ -92,14 +126,15 @@ extern unsigned char gpsComplete;
 extern char* gpsPositionString;
 extern const long long exfilAddress;
 
-#if EXFIL_NODE
-	extern long long sensorUGSTable[MAX_SENSOR_NETWORK_SIZE];
-	extern exfil_object exfilObject;
-#endif
+extern long long sensorUGSTable[MAX_SENSOR_NETWORK_SIZE];
+extern exfil_object exfilObject;
 
-//#else
-	extern message_queue* topQueuedMessage;
-//#endif
+extern xbee_object xbeeObject;
+extern message_queue* topQueuedMessage;
+
+extern unsigned int raspberryPISec;
+extern unsigned int raspberryPIEnabled;
+
 
 
 /* Define Functions */
@@ -112,6 +147,9 @@ unsigned int signedStringChecksum(char* stringToChecksum);
 unsigned int stringChecksum(unsigned char* stringToChecksum);
 
 void addMessageQueue(char* messageType, char* messageToAdd);
+void handleMessageReqAck(void);
+void handleMessageApproval(void);
+void handleMessageAck(void);
 void removeTopMessage(void);
 message_queue* removeThisMessage(message_queue* message_to_remove);
 message_queue* lastQueuedMessage(void);

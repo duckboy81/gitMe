@@ -9,16 +9,8 @@
 #include "main.h"
 #include "gpsModule.h"
 #include "raspberryPI.h"
-
-#if EXFIL_NODE
-
+#include "XBeeModule.h"
 #include "exfilRadio.h"
-
-#else
-
-#include "raspberryPI.h"
-
-#endif
 
 int _system_pre_init(void) {
 
@@ -32,11 +24,9 @@ int main(void) {
 
 	main_initialize();
 
-//	addMessageQueue(GPS_MESSAGE, "abcdefg");
-//	addMessageQueue(GPS_MESSAGE, "1234567");
-//	addMessageQueue(GPS_MESSAGE, "hello moto");
 //	addMessageQueue(GPS_MESSAGE, "bell curves for days");
-//	addMessageQueue(GPS_MESSAGE, "yolo");
+//	sendMessage(0x0013A20040B2C0D2, "OKAY");
+//	sendMessage(XBEE_BROADCAST_ADDR, "OKAY");
 
 	//Use a combination of polling and power savings to handle incoming data
 	while(TRUE) {
@@ -51,9 +41,10 @@ int main(void) {
 		//Handle messages to send
 		handleMessageQueue();
 
+#if EXFIL_NODE
 		//Handle nodes in queue -- exfilRadio
 		handleExfilQueue();
-
+#endif
 
 		__bis_SR_register(LPM0_bits + GIE);       // Enter LPM0, interrupts enabled
 	} //while()
@@ -67,8 +58,7 @@ void main_initialize(void) {
 #endif
 
 	initRealTimeClock();
-	//init_xbee();
+	initXbee();
 	initializeGPS();
-
 
 } //main_initialize()
