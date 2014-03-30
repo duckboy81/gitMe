@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 //Loads code explicit to exfil or sensor node
-#define EXFIL_NODE 1
+#define EXFIL_NODE 0
 
 #ifndef _COMMONINCLUDE_H
 #define	_COMMONINCLUDE_H
@@ -35,7 +35,7 @@
 #define PRE_MSG_TWIDDLES 40
 
 /* raspberryPI.h */
-#define MIN_RASP_PI_WAIT 1		//Time in seconds
+#define MIN_RASP_PI_WAIT 10		//Time in seconds
 
 /* XBeeModule.h */
 #define MAX_XBEE_BUFFER_LEN 100

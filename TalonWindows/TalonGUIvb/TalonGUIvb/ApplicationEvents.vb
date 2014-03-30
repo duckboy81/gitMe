@@ -11,7 +11,7 @@
 
         Protected Overrides Function OnInitialize(ByVal commandLineArgs As  _
                                                   System.Collections.ObjectModel.ReadOnlyCollection(Of String)) As Boolean
-            ' Set the display time to 5000 milliseconds (5 seconds). 
+            ' Set the display time to 3000 milliseconds (3 seconds). 
             Me.MinimumSplashScreenDisplayTime = 3000
             Return MyBase.OnInitialize(commandLineArgs)
         End Function
