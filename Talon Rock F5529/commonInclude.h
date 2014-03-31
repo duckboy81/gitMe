@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 //Loads code explicit to exfil or sensor node
-#define EXFIL_NODE 0
+#define EXFIL_NODE 1
 
 #ifndef _COMMONINCLUDE_H
 #define	_COMMONINCLUDE_H

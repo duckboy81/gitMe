@@ -182,7 +182,8 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 
 	int i = 0;
 	unsigned char j = 3; //Starts at two because of FIG_SHIFT and $-sign at the beginning
-	unsigned char currChar, checkSum, checkSumString[5], moduleIDString[5];
+	unsigned char currChar, checkSumString[5], moduleIDString[5];
+	unsigned int checkSum;
 
 	if (!isHAMReady()) { return FALSE; }
 

@@ -2,18 +2,27 @@
 <html>
   <head>
     <style>
-		body{
+	body{
 		margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px;
 		padding: 0;
 		color: black; font-size: 10pt; font-family: "Trebuchet MS", sans-serif;
 		background-color: #E2E2E2;
-		}
-      #map_canvas {
+	}
+  
+	#map_canvas {
 		border-style:solid;
 		border-width: 1px;
-        width: 725px;
+        <!-- width: 725px; -->
+		width: 798px;
         height: 289px;
-      }
+    }
+	  
+	.not_loaded {
+		z-index: 2;
+		position: fixed;
+		top: 50%;
+		left: 35%;
+	}
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
     <script>	
@@ -21,7 +30,19 @@
 		var markers = {};
 		var highlightID
 	
+		function checkGoogleInactive() {
+			if (typeof google === 'undefined') {
+				document.getElementById("not_loaded").style.display = "block";
+				return true;
+			} else {
+				document.getElementById("not_loaded").style.display = "none";
+				return false;
+			} //if-else()			
+		} //checkGoogleActive()
+	
 		function initialize() {
+			if (checkGoogleInactive()) return false;
+		
 			var map_canvas = document.getElementById('map_canvas');
 			var map_options = {
 			  center: new google.maps.LatLng(0, 0),
@@ -32,6 +53,8 @@
 		} //initialize()
 		
 		function addMarker(id, posLat, posLong) {
+			if (checkGoogleInactive()) return false;
+		
 			markers[id] = new google.maps.Marker({
 				map: map,
 				position: new google.maps.LatLng(posLat, posLong),
@@ -40,6 +63,8 @@
 		} //addMarker()
 		
 		function addBlueMarker(id, posLat, posLong) {
+			if (checkGoogleInactive()) return false;
+		
 			markers[id] = new google.maps.Marker({
 				map: map,
 				position: new google.maps.LatLng(posLat, posLong),
@@ -48,14 +73,26 @@
 		} //addBlueMarker()
 		
 		function removeMarker(id) {
+			if (checkGoogleInactive()) return false;
+		
 			markers[id].setMap(null);
 		} //removeMarker()
 		
 		function centerMap(posLat, posLong) {
+			if (checkGoogleInactive()) return false;
+		
 			map.setCenter( new google.maps.LatLng(posLat, posLong) );
 		} //centerMap()
 		
+		function updateMarker(id, posLat, posLong) {
+			alert("updateMarker not implemented yet!");
+			if (checkGoogleInactive()) return false;
+		
+		} //updateMarker
+		
 		function moveMarker(id, posLat, posLong) {
+			if (checkGoogleInactive()) return false;
+		
 			try {
 				markers[id].setPosition(new google.maps.LatLng(posLat, posLong) );	
 			} catch (err) {
@@ -65,6 +102,8 @@
 		} //moveMarker()
 		
 		function highlightMarker(id, posLat, posLong) {
+			if (checkGoogleInactive()) return false;
+		
 			
 			//De-highlight the old marker
 			try {
@@ -83,11 +122,15 @@
 		} //selectMarker()
 		
 		function hideMarker(id) {
+			if (checkGoogleInactive()) return false;
+		
 			markers[id].setVisible(false);
 		} //hideMarker()
 		
 		//Will return whether or not the marker was able to be shown
 		function showMarker(id, posLat, posLong) {
+			if (checkGoogleInactive()) return false;
+		
 			try {
 				markers[id].setVisible(true);
 			}catch (err) {
@@ -95,11 +138,16 @@
 				markers[id].setAnimation(google.maps.Animation.DROP);
 			} //try-catch()
 		} //showMarker()
-
-		google.maps.event.addDomListener(window, 'load', initialize);
     </script>
   </head>
   <body>
+	<div id="not_loaded" class="not_loaded" style="display:none;">Sorry, could not reach Google's map service</div>
     <div id="map_canvas"></div>
+	
+	<script>
+		if (!checkGoogleInactive()) {
+			google.maps.event.addDomListener(window, 'load', initialize);
+		} //if()
+	</script>
   </body>
 </html>

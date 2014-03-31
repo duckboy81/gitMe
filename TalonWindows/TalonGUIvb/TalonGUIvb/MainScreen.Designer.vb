@@ -59,9 +59,9 @@ Partial Class MainScreen
         Me.Label8 = New System.Windows.Forms.Label()
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
         Me.NumericUpDown1 = New System.Windows.Forms.NumericUpDown()
-        Me.Button10 = New System.Windows.Forms.Button()
-        Me.Button9 = New System.Windows.Forms.Button()
-        Me.Button8 = New System.Windows.Forms.Button()
+        Me.show_MTTY_console_button = New System.Windows.Forms.Button()
+        Me.repopulate_map_button = New System.Windows.Forms.Button()
+        Me.refresh_page_button = New System.Windows.Forms.Button()
         Me.WebBrowser1 = New System.Windows.Forms.WebBrowser()
         Me.Label10 = New System.Windows.Forms.Label()
         Me.Label9 = New System.Windows.Forms.Label()
@@ -471,9 +471,9 @@ Partial Class MainScreen
         'GroupBox2
         '
         Me.GroupBox2.Controls.Add(Me.NumericUpDown1)
-        Me.GroupBox2.Controls.Add(Me.Button10)
-        Me.GroupBox2.Controls.Add(Me.Button9)
-        Me.GroupBox2.Controls.Add(Me.Button8)
+        Me.GroupBox2.Controls.Add(Me.show_MTTY_console_button)
+        Me.GroupBox2.Controls.Add(Me.repopulate_map_button)
+        Me.GroupBox2.Controls.Add(Me.refresh_page_button)
         Me.GroupBox2.Controls.Add(Me.WebBrowser1)
         Me.GroupBox2.Controls.Add(Me.Label10)
         Me.GroupBox2.Controls.Add(Me.Label9)
@@ -494,38 +494,38 @@ Partial Class MainScreen
         Me.NumericUpDown1.TabIndex = 15
         Me.NumericUpDown1.Value = New Decimal(New Integer() {999, 0, 0, 0})
         '
-        'Button10
+        'show_MTTY_console_button
         '
-        Me.Button10.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.Button10.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Button10.Location = New System.Drawing.Point(660, 336)
-        Me.Button10.Name = "Button10"
-        Me.Button10.Size = New System.Drawing.Size(144, 30)
-        Me.Button10.TabIndex = 16
-        Me.Button10.Text = "Show MTTY Console"
-        Me.Button10.UseVisualStyleBackColor = True
+        Me.show_MTTY_console_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.show_MTTY_console_button.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.show_MTTY_console_button.Location = New System.Drawing.Point(660, 336)
+        Me.show_MTTY_console_button.Name = "show_MTTY_console_button"
+        Me.show_MTTY_console_button.Size = New System.Drawing.Size(144, 30)
+        Me.show_MTTY_console_button.TabIndex = 16
+        Me.show_MTTY_console_button.Text = "Show MTTY Console"
+        Me.show_MTTY_console_button.UseVisualStyleBackColor = True
         '
-        'Button9
+        'repopulate_map_button
         '
-        Me.Button9.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.Button9.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Button9.Location = New System.Drawing.Point(155, 336)
-        Me.Button9.Name = "Button9"
-        Me.Button9.Size = New System.Drawing.Size(144, 30)
-        Me.Button9.TabIndex = 14
-        Me.Button9.Text = "Repopulate Map"
-        Me.Button9.UseVisualStyleBackColor = True
+        Me.repopulate_map_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.repopulate_map_button.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.repopulate_map_button.Location = New System.Drawing.Point(155, 336)
+        Me.repopulate_map_button.Name = "repopulate_map_button"
+        Me.repopulate_map_button.Size = New System.Drawing.Size(144, 30)
+        Me.repopulate_map_button.TabIndex = 14
+        Me.repopulate_map_button.Text = "Repopulate Map"
+        Me.repopulate_map_button.UseVisualStyleBackColor = True
         '
-        'Button8
+        'refresh_page_button
         '
-        Me.Button8.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.Button8.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Button8.Location = New System.Drawing.Point(5, 336)
-        Me.Button8.Name = "Button8"
-        Me.Button8.Size = New System.Drawing.Size(144, 30)
-        Me.Button8.TabIndex = 13
-        Me.Button8.Text = "Refresh Page"
-        Me.Button8.UseVisualStyleBackColor = True
+        Me.refresh_page_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.refresh_page_button.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.refresh_page_button.Location = New System.Drawing.Point(5, 336)
+        Me.refresh_page_button.Name = "refresh_page_button"
+        Me.refresh_page_button.Size = New System.Drawing.Size(144, 30)
+        Me.refresh_page_button.TabIndex = 13
+        Me.refresh_page_button.Text = "Refresh Page"
+        Me.refresh_page_button.UseVisualStyleBackColor = True
         '
         'WebBrowser1
         '
@@ -627,9 +627,9 @@ Partial Class MainScreen
     Friend WithEvents GroupBox2 As System.Windows.Forms.GroupBox
     Friend WithEvents WebBrowser1 As System.Windows.Forms.WebBrowser
     Friend WithEvents NumericUpDown1 As System.Windows.Forms.NumericUpDown
-    Friend WithEvents Button10 As System.Windows.Forms.Button
-    Friend WithEvents Button9 As System.Windows.Forms.Button
-    Friend WithEvents Button8 As System.Windows.Forms.Button
+    Friend WithEvents show_MTTY_console_button As System.Windows.Forms.Button
+    Friend WithEvents repopulate_map_button As System.Windows.Forms.Button
+    Friend WithEvents refresh_page_button As System.Windows.Forms.Button
     Friend WithEvents Label10 As System.Windows.Forms.Label
     Friend WithEvents Label9 As System.Windows.Forms.Label
     Friend WithEvents RockStatusTimer As System.Windows.Forms.Timer

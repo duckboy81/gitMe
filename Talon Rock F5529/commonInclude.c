@@ -156,9 +156,7 @@ unsigned int signedStringChecksum(char* stringToChecksum) {
 	} //for()
 
 	//Invert the checksum to prevent an all zero message
-	checkSum = ~checkSum;
-
-	return checkSum;
+	return ~checkSum;
 } //signedStringChecksum()
 
 unsigned int stringChecksum(unsigned char* stringToChecksum) {
