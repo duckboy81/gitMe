@@ -4,11 +4,11 @@ Option Explicit On
 
 Public Class MainScreen
     'External Windows libraries used to find MMTTY window on startup
-    Private Declare Function FindWindow Lib "user32.dll" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr
-    Private Declare Function FindWindowEx Lib "user32.dll" Alias "FindWindowExA" (ByVal hWndParent As IntPtr, ByVal hWndChildAfter As Integer, ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr
-    Private Declare Function SendMessage Lib "user32.dll" Alias "SendMessageA" (ByVal hWnd As IntPtr, ByVal wMsg As Integer, ByVal wParam As Integer, ByVal lParam As IntPtr) As IntPtr
-    Private Declare Function PostMessage Lib "user32.dll" Alias "PostMessageA" (ByVal hwnd As IntPtr, ByVal wMsg As Integer, ByVal wParam As Integer, ByVal lParam As IntPtr) As IntPtr
-    Private Declare Function RegisterWindowMessage Lib "user32.dll" Alias "RegisterWindowMessageA" (ByVal lpString As String) As UInteger
+    Friend Declare Function FindWindow Lib "user32.dll" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr
+    Friend Declare Function FindWindowEx Lib "user32.dll" Alias "FindWindowExA" (ByVal hWndParent As IntPtr, ByVal hWndChildAfter As Integer, ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr
+    Friend Declare Function SendMessage Lib "user32.dll" Alias "SendMessageA" (ByVal hWnd As IntPtr, ByVal wMsg As Integer, ByVal wParam As Integer, ByVal lParam As IntPtr) As IntPtr
+    Friend Declare Function PostMessage Lib "user32.dll" Alias "PostMessageA" (ByVal hwnd As IntPtr, ByVal wMsg As Integer, ByVal wParam As Integer, ByVal lParam As IntPtr) As IntPtr
+    Friend Declare Function RegisterWindowMessage Lib "user32.dll" Alias "RegisterWindowMessageA" (ByVal lpString As String) As UInteger
 
     '******CONFIGURATION VARIABLES******'
     Dim DEBUG_BYPASS_CHECKSUM As Boolean = False
@@ -55,13 +55,6 @@ Public Class MainScreen
     Dim redBrush As New Drawing.SolidBrush(Color.Red)
     Dim blackBrush As New Drawing.SolidBrush(Color.Black)
     Dim greenBrush As New Drawing.SolidBrush(Color.Green)
-
-    'Multiple Enum declarations
-    Enum message_types
-        GPS_MSG
-        DETECT_MSG
-        EXFIL_NODE_IDENT_MSG
-    End Enum
 
     'MMTTY -> APP 
     Enum FROM_MMTTY
@@ -155,7 +148,9 @@ Public Class MainScreen
         Public new_flag As Boolean
         Public ignore_flag As Boolean
         Public node_name As String
-        Public message_type As message_types
+        Public message_type As String
+        Public event_name As String
+        Public speed As String
 
     End Structure
 
@@ -229,6 +224,163 @@ Public Class MainScreen
 
     Friend Sub Reset_Ignore()
         ignore_node_button.Text = "Ignore Node"
+    End Sub
+
+    Friend Sub ListBox1_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ListBox1.SelectedIndexChanged
+
+        'Update buttons
+        mark_unread_button.Enabled = False
+        ignore_msg_button.Enabled = False
+
+        If (ListBox1.Items.Count = 0) Then
+            ListBox1.Enabled = False
+        Else
+            ListBox1.Enabled = True
+        End If
+
+        If (IsNothing(ListBox1.SelectedItem)) Then
+            Exit Sub
+        End If
+
+        For Each thisEvent As talon_event In event_list
+            If (ListBox1.SelectedItem.ToString.Contains(thisEvent.event_name)) Then
+                'Save event name
+                ListBox1.Tag = thisEvent.event_name
+
+                'Update labels
+                event_msg_type.Text = thisEvent.message_type
+                event_node_name_label.Text = thisEvent.node_name
+                event_speed_label.Text = thisEvent.speed + " mph"
+
+                'Update buttons
+                mark_unread_button.Enabled = True
+                ignore_msg_button.Enabled = True
+                Exit For
+            End If
+        Next
+
+        Update_ListBox1(False)
+    End Sub
+
+    Private Sub nodeSelection_SelectedIndexChanged(sender As Object, e As EventArgs) Handles nodeSelection.SelectedIndexChanged
+        Update_ListBox1(False)
+    End Sub
+
+    Private Sub typeSelection_SelectedIndexChanged(sender As Object, e As EventArgs) Handles typeSelection.SelectedIndexChanged
+        Update_ListBox1(False)
+    End Sub
+
+    Friend Sub Update_ListBox1(recentlyNewed As Boolean)
+        'Save the currently selected one
+        Dim currEventName
+        Dim currEventTag = ListBox1.Tag
+        Dim selectedNode = Nothing
+        Dim selectedType = Nothing
+        Dim perEventUpdateName As String
+
+
+        RemoveHandler ListBox1.SelectedIndexChanged, AddressOf ListBox1_SelectedIndexChanged
+
+        If (IsNothing(nodeSelection.SelectedItem) = False) Then
+            selectedNode = nodeSelection.SelectedItem.ToString
+        End If
+
+        If (IsNothing(typeSelection.SelectedItem) = False) Then
+            selectedType = typeSelection.SelectedItem.ToString
+        End If
+
+        If (IsNothing(ListBox1.SelectedItem) = False) Then
+            currEventName = ListBox1.SelectedItem.ToString
+        End If
+
+        'Clear listbox
+        'ListBox1.Items.Clear()
+
+        'TODO: Do not clear the entire list, just update the one event we need to update
+
+        'Lower new flag if something is selected
+        If (IsNothing(currEventName) = False And recentlyNewed = False) Then
+            For i As Integer = 0 To event_list.Count - 1
+                Dim thisEvent As talon_event = event_list(i)
+
+                If (currEventName.Contains(thisEvent.event_name)) Then
+                    thisEvent.new_flag = False
+                    event_list(i) = thisEvent
+                    Exit For
+                End If
+            Next
+        End If
+
+        For i As Integer = 0 To event_list.Count - 1
+            Dim thisEvent As talon_event = event_list(i)
+
+            'Check filter by node
+            If (IsNothing(selectedNode) = False) Then
+                If (selectedNode <> "Show All" And selectedNode.ToString.Contains(thisEvent.node_name) = False) Then
+                    Continue For
+                End If
+            End If
+
+            'Check filter by type
+            If (IsNothing(selectedType) = False) Then
+                If (selectedType <> "Show All" And selectedType.ToString.Contains(thisEvent.message_type) = False) Then
+                    Continue For
+                End If
+            End If
+
+            'Add to list
+            perEventUpdateName = thisEvent.event_name
+
+            'Add the ignore message to names
+            If (thisEvent.ignore_flag = True) Then
+                perEventUpdateName = "(i) " + perEventUpdateName
+                If (IsNothing(currEventTag) = False) Then
+                    If (thisEvent.event_name.Contains(currEventTag)) Then
+                        ignore_msg_button.Text = "Allow Event"
+                    End If
+                End If
+            ElseIf (IsNothing(currEventTag) = False) Then
+                If (thisEvent.event_name.Contains(currEventTag)) Then
+                    ignore_msg_button.Text = "Ignore Event"
+                End If
+            End If
+
+
+            'Add the new message to names
+            If (thisEvent.new_flag = True) Then
+                perEventUpdateName = perEventUpdateName + " (new)"
+            End If
+
+            'Add the final name to the list
+            If (ListBox1.Items.Count = i) Then
+                ListBox1.Items.Add(perEventUpdateName)
+            Else
+                ListBox1.Items(i) = perEventUpdateName
+            End If
+        Next
+
+        'Highlight previously selected item
+        If (IsNothing(currEventTag) = False) Then
+            For Each thisItem In ListBox1.Items
+                If (thisItem.ToString.Contains(currEventTag)) Then
+                    ListBox1.SelectedItem = thisItem.ToString
+                    Exit For
+                End If
+            Next
+        Else
+            ListBox1.Tag = Nothing
+        End If
+
+        'Check to see if the list is empty
+        If (ListBox1.Items.Count = 0) Then
+            mark_unread_button.Enabled = False
+            ignore_msg_button.Enabled = False
+        Else
+            mark_unread_button.Enabled = True
+            ignore_msg_button.Enabled = True
+        End If
+
+        AddHandler ListBox1.SelectedIndexChanged, AddressOf ListBox1_SelectedIndexChanged
     End Sub
 
     Friend Sub ComboBox1_SelectedValueChanged(sender As Object, e As EventArgs) Handles ComboBox1.SelectedValueChanged, ComboBox1.SelectedIndexChanged
@@ -340,6 +492,7 @@ Public Class MainScreen
 
                         'Update list
                         thisRock.last_comm = rock_list(i).last_comm
+                        thisRock.manual_gps = False
                         rock_list(i) = thisRock
 
                         'Update UI
@@ -484,49 +637,67 @@ Public Class MainScreen
     End Sub
 
     Friend Sub ignore_msg_button_Click(sender As Object, e As EventArgs) Handles ignore_msg_button.Click
-        'TODO: here
+        If (IsNothing(ListBox1.Tag) = False) Then
+            'Find the node
+            For i As Integer = 0 To event_list.Count - 1
+                Dim thisEvent As talon_event = event_list(i)
+
+                If (ListBox1.Tag.ToString.Contains(thisEvent.event_name)) Then
+
+                    If (thisEvent.ignore_flag = True) Then
+
+                        'Reset Flag
+                        thisEvent.ignore_flag = False
+
+                        'Update list
+                        event_list(i) = thisEvent
+
+                        'Change the button
+                        ignore_msg_button.Text = "Ignore Event"
+
+                        'Update entry
+                        Update_ListBox1(False)
+                    Else
+
+                        'Set Flag
+                        thisEvent.ignore_flag = True
+
+                        'Update list
+                        event_list(i) = thisEvent
+
+                        'Change the button
+                        ignore_msg_button.Text = "Allow Event"
+
+                        'Update entry
+                        Update_ListBox1(False)
+
+                    End If
+
+                End If
+            Next
+        End If
     End Sub
 
     Friend Sub mark_unread_button_Click(sender As Object, e As EventArgs) Handles mark_unread_button.Click
-        'TODO: Remove this manual addition
-        ComboBox1.Enabled = True
-        rock_list.Add(New talon_node With {.node_name = "Node 0001", _
-                                           .gps_lat_deg = 32, _
-                                           .gps_lat_min = 45, _
-                                           .gps_lat_sec = 134.0, _
-                                           .gps_long_deg = 151, _
-                                           .gps_long_min = 21, _
-                                           .gps_long_sec = 10.134, _
-                                           .number_of_detections = 10, _
-                                           .last_comm = New Date(1, 1, 1, 4, 1, 39, 0)
-                                           })
-        ComboBox1.Items.Add(rock_list(0).node_name)
+        If (IsNothing(ListBox1.Tag) = False) Then
+            'Find the node
+            For i As Integer = 0 To event_list.Count - 1
+                Dim thisEvent As talon_event = event_list(i)
 
-        rock_list.Add(New talon_node With {.node_name = "Node 0002", _
-                                           .gps_lat_deg = 42, _
-                                           .gps_lat_min = 43, _
-                                           .gps_lat_sec = 124.0, _
-                                           .gps_long_deg = 131, _
-                                           .gps_long_min = 25, _
-                                           .gps_long_sec = 11.134, _
-                                           .number_of_detections = 4, _
-                                           .last_comm = New Date(1, 1, 2, 4, 4, 39, 0)
-                                           })
-        ComboBox1.Items.Add(rock_list(1).node_name)
+                If (ListBox1.Tag.ToString.Contains(thisEvent.event_name)) Then
 
-        rock_list.Add(New talon_node With {.node_name = "Node 0003", _
-                                           .gps_lat_deg = 12, _
-                                           .gps_lat_min = 35, _
-                                           .gps_lat_sec = 114.0, _
-                                           .gps_long_deg = 141, _
-                                           .gps_long_min = 12, _
-                                           .gps_long_sec = 10.121, _
-                                           .number_of_detections = 3, _
-                                           .last_comm = New Date(1, 1, 1, 1, 45, 39, 0)
-                                           })
-        ComboBox1.Items.Add(rock_list(2).node_name)
+                    'Raise flag
+                    thisEvent.new_flag = True
 
-        Form1.Show()
+                    'Update list
+                    event_list(i) = thisEvent
+
+                    'Update entry
+                    Update_ListBox1(True)
+
+                End If
+            Next
+        End If
     End Sub
 
     Friend Sub refresh_page_button_Click(sender As Object, e As EventArgs) Handles refresh_page_button.Click
@@ -576,32 +747,32 @@ Public Class MainScreen
         MMTTY_Console.Show()
     End Sub
 
-'**************** Time to handle all MMTTY window events ********************
-Protected Overrides Sub WndProc(ByRef m As System.Windows.Forms.Message)
-    Dim hWnd As IntPtr = m.HWnd
-    Dim message As Integer = m.Msg
-    Dim wParam As IntPtr = m.WParam
-    Dim lParam As IntPtr = m.LParam
+    '**************** Time to handle all MMTTY window events ********************
+    Protected Overrides Sub WndProc(ByRef m As System.Windows.Forms.Message)
+        Dim hWnd As IntPtr = m.HWnd
+        Dim message As Integer = m.Msg
+        Dim wParam As IntPtr = m.WParam
+        Dim lParam As IntPtr = m.LParam
 
-    'Show the Message "OK" if someone sends a message with MSG_MMTTY:
-    Select Case message
-        Case WindowMessages.WM_DESTROY
-            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_EXIT, vbNull)
-        Case Else
-            If (message = MSG_MMTTY) Then
-                Select Case wParam
-                    Case FROM_MMTTY.TXM_LEVEL
-                        Dim signalLevel As Short = lParam.ToInt32 And &HFFFF
-                        Dim squelchLevel As Short = (lParam.ToInt32 And &HFFFF0000) >> 16
+        'Show the Message "OK" if someone sends a message with MSG_MMTTY:
+        Select Case message
+            Case WindowMessages.WM_DESTROY
+                PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_EXIT, vbNull)
+            Case Else
+                If (message = MSG_MMTTY) Then
+                    Select Case wParam
+                        Case FROM_MMTTY.TXM_LEVEL
+                            Dim signalLevel As Short = lParam.ToInt32 And &HFFFF
+                            Dim squelchLevel As Short = (lParam.ToInt32 And &HFFFF0000) >> 16
 
 
-                        If (signalLevel > 1250) Then
-                            signalLevel = 1250
-                        End If
+                            If (signalLevel > 1250) Then
+                                signalLevel = 1250
+                            End If
 
-                        If (signalLevel < 0) Then
-                            signalLevel = 0
-                        End If
+                            If (signalLevel < 0) Then
+                                signalLevel = 0
+                            End If
 
                             MMTTY_Console.monitorBar.Value = signalLevel
 
@@ -613,104 +784,104 @@ Protected Overrides Sub WndProc(ByRef m As System.Windows.Forms.Message)
                                 MMTTY_Console.squelchBar.Value = squelchLevel
                             End If
 
-                        Call RTTYprogressBar()
-                    Case FROM_MMTTY.TXM_HANDLE
-                        MMTTY_Handle = lParam
-                        PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_HANDLE, hWnd)
-                        'Send configuration messages
-                        PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETBAUD, configBaudRate)
-                        PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETMARK, configMarkFreq)
-                        PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETSPACE, configSpaceFreq)
+                            Call RTTYprogressBar()
+                        Case FROM_MMTTY.TXM_HANDLE
+                            MMTTY_Handle = lParam
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_HANDLE, hWnd)
+                            'Send configuration messages
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETBAUD, configBaudRate)
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETMARK, configMarkFreq)
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETSPACE, configSpaceFreq)
 
-                        configSwitch = configSwitch_DEM_TYPE _
-                            Or configSwitch_AFC << 2 _
-                            Or configSwitch_NET << 3 _
-                            Or configSwitch_ATC << 4 _
-                            Or configSwitch_BPF << 5 _
-                            Or configSwitch_LMS_NOTCH << 6 _
-                            Or configSwitch_SQ << 7 _
-                            Or configSwitch_Rev << 8 _
-                            Or configSwitch_UOS << 9 _
-                            Or configSwitch_AFC_Alg << 10 _
-                            Or configSwitch_Integrator << 12 _
-                            Or configSwitch_LMS_OR_NOTCH << 13 _
-                            Or configSwitch_NUM_NOTCH << 14 _
-                            Or configSwitch_KEY_BUFFER << 15 _
-                            Or configSwitch_WORD_WRAP << 16 _
-                            Or configSwitch_WAY_TO_SENT << 17
+                            configSwitch = configSwitch_DEM_TYPE _
+                                Or configSwitch_AFC << 2 _
+                                Or configSwitch_NET << 3 _
+                                Or configSwitch_ATC << 4 _
+                                Or configSwitch_BPF << 5 _
+                                Or configSwitch_LMS_NOTCH << 6 _
+                                Or configSwitch_SQ << 7 _
+                                Or configSwitch_Rev << 8 _
+                                Or configSwitch_UOS << 9 _
+                                Or configSwitch_AFC_Alg << 10 _
+                                Or configSwitch_Integrator << 12 _
+                                Or configSwitch_LMS_OR_NOTCH << 13 _
+                                Or configSwitch_NUM_NOTCH << 14 _
+                                Or configSwitch_KEY_BUFFER << 15 _
+                                Or configSwitch_WORD_WRAP << 16 _
+                                Or configSwitch_WAY_TO_SENT << 17
 
-                        PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETSWITCH, configSwitch)
+                            PostMessage(MMTTY_Handle, MSG_MMTTY, TO_MMTTY.RXM_SETSWITCH, configSwitch)
 
                             MMTTY_Console.RTTYbox.Text = "RTTY Status - Running"
 
-                    Case FROM_MMTTY.TXM_CHAR
-                        'Dim incomingDataStart As Boolean = False
-                        'Dim incomingDataBuffer As Queue(Of Char) = New Queue(Of Char)()
-                        'Dim incomingDataNumUntilEnd As Integer = -1
-                        Dim incomingChar As Char = Chr(lParam.ToString)
+                        Case FROM_MMTTY.TXM_CHAR
+                            'Dim incomingDataStart As Boolean = False
+                            'Dim incomingDataBuffer As Queue(Of Char) = New Queue(Of Char)()
+                            'Dim incomingDataNumUntilEnd As Integer = -1
+                            Dim incomingChar As Char = Chr(lParam.ToString)
 
-                        'Add to debug box
+                            'Add to debug box
                             MMTTY_Console.MMTTYBox.Text = MMTTY_Console.MMTTYBox.Text + incomingChar
 
-                        'Beginning of string
-                        If (incomingChar = "$") Then
-                            incomingDataStart = True
+                            'Beginning of string
+                            If (incomingChar = "$") Then
+                                incomingDataStart = True
 
-                            If (incomingDataNumUntilEnd < -1) Then
+                                If (incomingDataNumUntilEnd < -1) Then
+                                    Call synthesizeIncomingData()
+                                End If
+
+                                incomingDataNumUntilEnd = -1
+                            End If
+
+                            If (incomingDataStart = True) Then
+                                'Checksum of string
+                                If (incomingChar = "&") Then
+                                    incomingDataNumUntilEnd = 6
+                                End If
+
+                                'Add to queue
+                                incomingDataBuffer.Enqueue(incomingChar)
+
+                                'Decrement handle
+                                incomingDataNumUntilEnd = incomingDataNumUntilEnd - 1
+                            End If
+
+                            'End of string
+                            If (incomingDataNumUntilEnd = 0 And incomingDataStart = True) Then
+                                incomingDataStart = False
                                 Call synthesizeIncomingData()
                             End If
 
-                            incomingDataNumUntilEnd = -1
-                        End If
+                        Case Else
+                            If (1 = 1) Then
 
-                        If (incomingDataStart = True) Then
-                            'Checksum of string
-                            If (incomingChar = "&") Then
-                                incomingDataNumUntilEnd = 6
                             End If
+                    End Select
+                End If
+        End Select
 
-                            'Add to queue
-                            incomingDataBuffer.Enqueue(incomingChar)
+        MyBase.WndProc(m)
+    End Sub
 
-                            'Decrement handle
-                            incomingDataNumUntilEnd = incomingDataNumUntilEnd - 1
-                        End If
+    Private Sub synthesizeIncomingData()
+        Dim startStringIdent As Boolean = False
+        Dim compiledString As String = ""
 
-                        'End of string
-                        If (incomingDataNumUntilEnd = 0 And incomingDataStart = True) Then
-                            incomingDataStart = False
-                            Call synthesizeIncomingData()
-                        End If
-
-                    Case Else
-                        If (1 = 1) Then
-
-                        End If
-                End Select
+        While (incomingDataBuffer.Count > 0)
+            If (incomingDataBuffer.Peek = "$" And startStringIdent = True) Then
+                Exit While
             End If
-    End Select
 
-    MyBase.WndProc(m)
-End Sub
+            startStringIdent = True
 
-Private Sub synthesizeIncomingData()
-    Dim startStringIdent As Boolean = False
-    Dim compiledString As String = ""
+            compiledString = compiledString + incomingDataBuffer.Dequeue
 
-    While (incomingDataBuffer.Count > 0)
-        If (incomingDataBuffer.Peek = "$" And startStringIdent = True) Then
-            Exit While
-        End If
+        End While
 
-        startStringIdent = True
-
-        compiledString = compiledString + incomingDataBuffer.Dequeue
-
-    End While
-
-    Console.WriteLine(compiledString)
-    handleIncomingData(compiledString)
-End Sub
+        Console.WriteLine(compiledString)
+        handleIncomingData(compiledString)
+    End Sub
 
     Private Sub handleRockData(rockName As String)
         Dim tempRock As talon_node
@@ -740,15 +911,16 @@ End Sub
         ComboBox1.Items.Add(tempRock.node_name)
     End Sub
 
-Private Sub handleIncomingData(incomingString As String)
+    Private Sub handleIncomingData(incomingString As String)
         Dim stringPortionPos As Integer = 0
         Dim message_id As String = ""
         Dim module_id As String = ""
         Dim ham_message As String = ""
         Dim checksum As UInteger = 0
         Dim checksumCalculated As UInteger = 0
-        Dim thisRock As talon_node = Nothing
+        Dim thisRock As talon_node
         Dim found_rock As Integer
+        Dim newEvent As talon_event = New talon_event
 
         'Needs to contain checksum identifier
         If (Not incomingString.Contains("&")) Then
@@ -764,13 +936,13 @@ Private Sub handleIncomingData(incomingString As String)
             incomingString = incomingString.Substring(0, incomingString.LastIndexOf("&"))
 
             'Determine module id
-            module_id = incomingString.Split(";")(0)
+            module_id = incomingString.Split(";")(0).Trim
 
             'Determine message id
-            message_id = incomingString.Split(";")(1)
+            message_id = incomingString.Split(";")(1).Trim
 
             'Determine message
-            ham_message = incomingString.Split(";")(2)
+            ham_message = incomingString.Split(";")(2).Trim
 
             'Determine if the message is valid
             checksumCalculated = 0
@@ -801,17 +973,17 @@ Private Sub handleIncomingData(incomingString As String)
 
             'Check to see if the node already exists
             For found_rock = 0 To rock_list.Count - 1
-                thisRock = rock_list(found_rock)
+                Dim tempRock As talon_node = rock_list(found_rock)
 
-                If (InStr(thisRock.node_name, module_id)) Then
+                If (tempRock.node_name.Contains(module_id)) Then
                     thisRock = rock_list(found_rock)
                     Exit For
                 End If
             Next
 
-            If (IsNothing(thisRock) = True) Then
+            If (found_rock = rock_list.Count) Then
                 thisRock = New talon_node With {
-                .node_name = "Node xxxx", _
+                .node_name = "Node " & module_id, _
                 .gps_lat_deg = 0, _
                 .gps_lat_min = 0, _
                 .gps_lat_sec = 0, _
@@ -819,7 +991,7 @@ Private Sub handleIncomingData(incomingString As String)
                 .gps_long_min = 0, _
                 .gps_long_sec = 0, _
                 .number_of_detections = 0, _
-                .last_comm = New Date(0)
+                .last_comm = New Date(1)
             }
 
                 found_rock = -1
@@ -849,17 +1021,57 @@ Private Sub handleIncomingData(incomingString As String)
                     InvokeWebScript("updateMarker", _
                         New String() {thisRock.node_name, RockToLatitude(thisRock), RockToLongitude(thisRock)})
 
+                    'Add information to event list
+                    newEvent.message_type = "GPS Update"
                 Case "S"
+                    'Add information to event list
+                    newEvent.message_type = "Awake Beacon"
 
                 Case "D"
+                    'Add information to event list
+                    newEvent.message_type = "Detection Alarm"
 
+                    thisRock.number_of_detections = thisRock.number_of_detections + 1
             End Select
+
+            'Event list update
+            newEvent.time = DateTime.UtcNow
+            newEvent.speed = 0
+            newEvent.node_name = thisRock.node_name
+            newEvent.new_flag = True
+            newEvent.ignore_flag = False
+            newEvent.event_name = newEvent.time.ToString("dd MMM yyyy -- HH:mm:ss")
+
+            'Add event to event list
+            event_list.Add(newEvent)
+
+            'Refresh listbox
+            Update_ListBox1(False)
+
+            'Check to see if we need to add this node to the node list selection box
+            Dim found_node_in_box As Boolean = False
+            For Each thisNode As String In nodeSelection.Items
+                If (thisNode.Contains(thisRock.node_name)) Then
+                    found_node_in_box = True
+                    Exit For
+                End If
+            Next
+
+            If (found_node_in_box = False) Then
+                nodeSelection.Items.Add(thisRock.node_name)
+            End If
+
+            'Update last communication timer
+            thisRock.last_comm = New Date(1)
 
             If (found_rock = -1) Then
                 rock_list.Add(thisRock)
             Else
                 rock_list(found_rock) = thisRock
             End If
+
+            'Enable the combobox if needed
+            ComboBox1.Enabled = 1
 
         Catch ex As Exception
             Exit Sub

@@ -30,7 +30,7 @@
                     thisRock.gps_long_sec = 0
                     lng_sec.Value = 0
                 End If
-                
+
                 'Check for direction change (N/S)
                 If (lat_dir.Text = "S") Then
                     thisRock.gps_lat_deg = thisRock.gps_lat_deg * -1
@@ -43,6 +43,7 @@
 
                 'Update list
                 thisRock.last_comm = MainScreen.rock_list(i).last_comm
+                thisRock.manual_gps = True
                 MainScreen.rock_list(i) = thisRock
 
                 'Update UI

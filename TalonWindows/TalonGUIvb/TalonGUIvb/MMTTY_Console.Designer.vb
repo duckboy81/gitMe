@@ -24,7 +24,6 @@ Partial Class MMTTY_Console
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(MMTTY_Console))
         Me.RTTYbox = New System.Windows.Forms.GroupBox()
-        Me.mmtty_show_button = New System.Windows.Forms.Button()
         Me.MMTTYBox = New System.Windows.Forms.TextBox()
         Me.monitorBar = New System.Windows.Forms.ProgressBar()
         Me.squelchBar = New System.Windows.Forms.TrackBar()
@@ -36,7 +35,6 @@ Partial Class MMTTY_Console
         '
         'RTTYbox
         '
-        Me.RTTYbox.Controls.Add(Me.mmtty_show_button)
         Me.RTTYbox.Controls.Add(Me.MMTTYBox)
         Me.RTTYbox.Controls.Add(Me.monitorBar)
         Me.RTTYbox.Controls.Add(Me.squelchBar)
@@ -45,22 +43,10 @@ Partial Class MMTTY_Console
         Me.RTTYbox.Font = New System.Drawing.Font("Microsoft Sans Serif", 14.25!)
         Me.RTTYbox.Location = New System.Drawing.Point(5, 6)
         Me.RTTYbox.Name = "RTTYbox"
-        Me.RTTYbox.Size = New System.Drawing.Size(738, 147)
+        Me.RTTYbox.Size = New System.Drawing.Size(738, 115)
         Me.RTTYbox.TabIndex = 1
         Me.RTTYbox.TabStop = False
         Me.RTTYbox.Text = "RTTY Status - Offline"
-        '
-        'mmtty_show_button
-        '
-        Me.mmtty_show_button.Enabled = False
-        Me.mmtty_show_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.mmtty_show_button.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.mmtty_show_button.Location = New System.Drawing.Point(17, 115)
-        Me.mmtty_show_button.Name = "mmtty_show_button"
-        Me.mmtty_show_button.Size = New System.Drawing.Size(111, 26)
-        Me.mmtty_show_button.TabIndex = 20
-        Me.mmtty_show_button.Text = "Show MMTTY"
-        Me.mmtty_show_button.UseVisualStyleBackColor = True
         '
         'MMTTYBox
         '
@@ -120,11 +106,13 @@ Partial Class MMTTY_Console
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(749, 159)
+        Me.ClientSize = New System.Drawing.Size(749, 129)
         Me.Controls.Add(Me.RTTYbox)
         Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.MaximizeBox = False
+        Me.MaximumSize = New System.Drawing.Size(765, 167)
         Me.MinimizeBox = False
+        Me.MinimumSize = New System.Drawing.Size(765, 167)
         Me.Name = "MMTTY_Console"
         Me.Text = "MMTTY Console"
         Me.RTTYbox.ResumeLayout(False)
@@ -139,5 +127,4 @@ Partial Class MMTTY_Console
     Friend WithEvents squelchBar As System.Windows.Forms.TrackBar
     Friend WithEvents Label4 As System.Windows.Forms.Label
     Friend WithEvents Label1 As System.Windows.Forms.Label
-    Friend WithEvents mmtty_show_button As System.Windows.Forms.Button
 End Class
