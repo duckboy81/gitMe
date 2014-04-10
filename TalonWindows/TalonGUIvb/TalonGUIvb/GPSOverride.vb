@@ -52,7 +52,10 @@
                 'Update button
                 MainScreen.Set_GPS_Override()
 
-                'TODO: Update GMap list
+                'Update GMap list
+                MainScreen.InvokeWebScript("moveMarker", New String() {thisRock.node_name, _
+                                                                       MainScreen.RockToLatitude(thisRock), _
+                                                                       MainScreen.RockToLongitude(thisRock)})
 
                 'Close window
                 Me.Close()

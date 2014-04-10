@@ -26,6 +26,16 @@ void initXbee() {
 	//Port Function Select
 	P3SEL |= RX|TX;				//Assigns pins to RX(P3.4), TX(P3.3)
 
+	//Activate LED
+	P4DIR |= BIT7;//Set LEDs to output
+	P4OUT |= BIT7;//Toggle LEDs
+
+#if EXFIL_NODE
+	//Activate LED
+	P1DIR |= BIT0;//Set LEDs to output
+	P1OUT |= BIT0;//Toggle LEDs
+#endif
+
 	//Enable state machine
 	UCA0CTL1 &= ~UCSWRST;
 
@@ -68,6 +78,9 @@ void sendMessage(long long xbeeAddr, char* txData){
 
 	//Send checksum
 	sendByte(checksum);
+
+	//Toggle an LED
+	P4OUT ^= BIT7;
 } //sendMessage()
 
 /**
@@ -250,6 +263,9 @@ __interrupt void USCI0RX_ISR(void) {
 
 #if EXFIL_NODE
 
+		//Activate LED
+		P1OUT ^= BIT0;//Toggle LED
+
 		xbeeObject.xbeeSenderNodeAddr = addXbee(xbeeObject.xbeeSenderAddr);
 
 		if (xbeeObject.bufferSpace[RX_DATASTART] == NETWORK_NODE_REQ_INT) {
@@ -271,7 +287,7 @@ __interrupt void USCI0RX_ISR(void) {
 
 			//Add the message to the radio and reply if successful
 			if (sendHAMString(exfilObject.topExfilQueue->message, xbeeObject.xbeeSenderNodeAddr)) {
-				exfilObject.topExfilQueue->status = EXFIL_ACCEPT_ACK;
+				exfilObject.topExfilQueue->status = EXFIL_ACCEPT_ACK_SENT;
 			} else {
 				//Not successful, delete it
 				exfilObject.topExfilQueue->status = EXFIL_FIN;

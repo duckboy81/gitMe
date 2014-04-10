@@ -18,6 +18,8 @@
 /* main.c */
 #define EXFIL_XBEE_ADDR 0x0013A20040B2C0D2
 #define MAX_SENSOR_NETWORK_SIZE 100			//Max size of 99,999 nodes
+#define INITIAL_STATUS_REPORT_SEC 30		//Time to wait until sending first status message (in seconds)
+#define STATUS_REPORT_INTERVAL	1800		//Time between status messages (in seconds)
 
 /* gpsModule.h */
 	//With an update rate of 1 data update per second, the below
@@ -26,16 +28,13 @@
 #define MIN_GPS_LOCK_CYCLES 60		//Max value 65536
 #define MAX_GPS_LOCK_TIME 600 		//(Standard about 600 seconds)
 
-/* queue.h */
-#define QUEUESIZE       	005	//Max value 32767
-#define MAX_STRING_LENGTH	100		//Max value 32767
-
 /* radioHAM.h */
 #define MIN_TIME_BETWEEN_EXFIL_MSGS 2
 #define PRE_MSG_TWIDDLES 40
 
 /* raspberryPI.h */
-#define MIN_RASP_PI_WAIT 10		//Time in seconds
+#define MIN_RASP_PI_WAIT 60		//Time in seconds
+#define MIN_RASP_PI_WAIT_BETWEEN_DETECTIONS	20 //Time in seconds
 
 /* XBeeModule.h */
 #define MAX_XBEE_BUFFER_LEN 100
@@ -118,10 +117,14 @@ enum exfil_message_status
   EXFIL_ACCEPT_MSG,		//We need to tell a node it is allowed to send its message (only 1 node at a time)
   EXFIL_ACCEPT_WAIT,	//We are waiting for the node's message (only 1 node at a time)
   EXFIL_ACCEPT_ACK,		//We need to tell a node its message was accepted (only 1 node at a time)
+  EXFIL_ACCEPT_ACK_SENT,//We need to tell a node its message was accepted (and tell ourself we sent it to the radio already)
   EXFIL_FIN				//We are done with the message (only 1 node at a time)
 };
 
 /* Global variables */
+extern unsigned int statusReportTimeWait;  //In seconds (Max value 65536)
+extern char initialStatusSent;
+
 extern unsigned char gpsComplete;
 extern char* gpsPositionString;
 extern const long long exfilAddress;
@@ -134,6 +137,7 @@ extern message_queue* topQueuedMessage;
 
 extern unsigned int raspberryPISec;
 extern unsigned int raspberryPIEnabled;
+extern unsigned int raspberryPISensorTripTimer;
 
 
 

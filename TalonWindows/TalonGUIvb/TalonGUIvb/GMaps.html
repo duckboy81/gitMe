@@ -55,55 +55,85 @@
 		function addMarker(id, posLat, posLong) {
 			if (checkGoogleInactive()) return false;
 		
-			markers[id] = new google.maps.Marker({
-				map: map,
-				position: new google.maps.LatLng(posLat, posLong),
-				icon: "https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png"
-			});
+			if (posLat != 0 || posLong != 0) {
+				markers[id] = new google.maps.Marker({
+					map: map,
+					position: new google.maps.LatLng(posLat, posLong),
+					icon: "https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png"
+				});
+				return true;
+			} //if()
+			return false;
 		} //addMarker()
 		
 		function addBlueMarker(id, posLat, posLong) {
 			if (checkGoogleInactive()) return false;
 		
-			markers[id] = new google.maps.Marker({
-				map: map,
-				position: new google.maps.LatLng(posLat, posLong),
-				icon: "https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png"
-			});
+			if (posLat != 0 || posLong != 0) {
+				markers[id] = new google.maps.Marker({
+					map: map,
+					position: new google.maps.LatLng(posLat, posLong),
+					icon: "https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png"
+				});
+				return true;
+			} //if()
+			return false;
 		} //addBlueMarker()
 		
 		function removeMarker(id) {
 			if (checkGoogleInactive()) return false;
-		
-			markers[id].setMap(null);
+			
+			try {
+				markers[id].setMap(null);
+			} catch (err) {}
 		} //removeMarker()
 		
-		function centerMap(posLat, posLong) {
+		function centerMap(id) {
 			if (checkGoogleInactive()) return false;
 		
-			map.setCenter( new google.maps.LatLng(posLat, posLong) );
+			try{
+				map.setCenter( markers[id].position );
+			} catch (err) { }
 		} //centerMap()
 		
 		function updateMarker(id, posLat, posLong) {
-			alert("updateMarker not implemented yet!");
 			if (checkGoogleInactive()) return false;
-		
+			if (posLat == 0 && posLong == 0) return false;
+			
+			//Update marker information
+			try {
+				if (posLat == 0 && posLong == 0) {
+					markers[id].visible = true;
+				} else {
+					markers[id].visible = false;
+				} //if-else
+				markers[id].setCenter(new google.maps.LatLng(posLat, posLong));
+			} catch (err) {
+				addMarker(id, posLat, posLong);
+				//markers[id].setAnimation(google.maps.Animation.DROP);
+			} //try-catch()		
 		} //updateMarker
 		
 		function moveMarker(id, posLat, posLong) {
 			if (checkGoogleInactive()) return false;
+			if (posLat == 0 && posLong == 0) return false;
 		
 			try {
+				if (posLat == 0 && posLong == 0) {
+					markers[id].visible = true;
+				} else {
+					markers[id].visible = false;
+				} //if-else
 				markers[id].setPosition(new google.maps.LatLng(posLat, posLong) );	
 			} catch (err) {
-				addMarker(id, posLat, posLong);
-				markers[id].setAnimation(google.maps.Animation.DROP);
+				if (addMarker(id, posLat, posLong)) {
+					markers[id].setAnimation(google.maps.Animation.DROP);
+				} //if()
 			} //try-catch()
 		} //moveMarker()
 		
 		function highlightMarker(id, posLat, posLong) {
 			if (checkGoogleInactive()) return false;
-		
 			
 			//De-highlight the old marker
 			try {
@@ -112,14 +142,20 @@
 			
 			//Highlight a new marker
 			try {
+				if (posLat == 0 && posLong == 0) {
+					markers[id].visible = true;
+				} else {
+					markers[id].visible = false;
+				} //if-else
 				markers[id].setIcon("https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png")
 			} catch (err) {
-				addBlueMarker(id, posLat, posLong);
-				markers[id].setAnimation(google.maps.Animation.DROP);
+				if (addBlueMarker(id, posLat, posLong)) {
+					markers[id].setAnimation(google.maps.Animation.DROP);
+				} //if()
 			} //try-catch()
 			
 			highlightID = id
-		} //selectMarker()
+		} //highlightMarker()
 		
 		function hideMarker(id) {
 			if (checkGoogleInactive()) return false;
@@ -130,12 +166,14 @@
 		//Will return whether or not the marker was able to be shown
 		function showMarker(id, posLat, posLong) {
 			if (checkGoogleInactive()) return false;
+			if (posLat == 0 && posLong == 0) return false;
 		
 			try {
 				markers[id].setVisible(true);
 			}catch (err) {
-				addBlueMarker(id, posLat, posLong);
-				markers[id].setAnimation(google.maps.Animation.DROP);
+				if (addBlueMarker(id, posLat, posLong)) {
+					markers[id].setAnimation(google.maps.Animation.DROP);
+				} //if()
 			} //try-catch()
 		} //showMarker()
     </script>

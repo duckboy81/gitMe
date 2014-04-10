@@ -103,7 +103,19 @@ void handleExfilQueue() {
 				//(xbee) tell the node the message it sent was accepted
 				sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_MSG_ACK);
 //#endif
-			} //if()
+			} else {
+				//Not successful, delete it
+				exfilObject.topExfilQueue->status = EXFIL_FIN;
+			} //if-else()
+			break;
+
+		case EXFIL_ACCEPT_ACK_SENT:
+			temp_node_pointer->status = EXFIL_FIN;
+
+//#if EXFIL_NODE
+			//(xbee) tell the node the message it sent was accepted
+			sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_MSG_ACK);
+//#endif
 			break;
 
 		case EXFIL_FIN:

@@ -524,6 +524,7 @@ Partial Class MainScreen
         '
         'WebBrowser1
         '
+        Me.WebBrowser1.IsWebBrowserContextMenuEnabled = False
         Me.WebBrowser1.Location = New System.Drawing.Point(5, 29)
         Me.WebBrowser1.Margin = New System.Windows.Forms.Padding(0)
         Me.WebBrowser1.MinimumSize = New System.Drawing.Size(20, 20)

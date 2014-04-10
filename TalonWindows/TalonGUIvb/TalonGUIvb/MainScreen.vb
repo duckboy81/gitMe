@@ -450,7 +450,9 @@ Public Class MainScreen
                 ignore_node_button.Enabled = True
 
                 'Highlight marker
-                InvokeWebScript("highlightMarker", New String() {thisRock.node_name})
+                InvokeWebScript("highlightMarker", New String() {thisRock.node_name, _
+                                                                 RockToLatitude(thisRock), _
+                                                                 RockToLongitude(thisRock)})
 
                 Exit For
             End If
@@ -499,6 +501,10 @@ Public Class MainScreen
                         ComboBox1_SelectedValueChanged(Nothing, Nothing)
 
                         'Update webpage map coordinates
+                        InvokeWebScript("highlightMarker", _
+                                        New String() {thisRock.node_name, _
+                                                      RockToLatitude(thisRock), _
+                                                      RockToLongitude(thisRock)})
 
                         'Change the button
                         Reset_GPS_Override()
@@ -509,7 +515,6 @@ Public Class MainScreen
                 'Show the override form
                 GPSOverride.ShowDialog()
 
-                ''Update webpage map coordinate && change the push button as needed in the other form
             End If
         End If
     End Sub
@@ -532,6 +537,9 @@ Public Class MainScreen
                         thisRock.last_comm = rock_list(i).last_comm
                         rock_list(i) = thisRock
 
+                        'Update GMaps
+                        InvokeWebScript("showMarker", New String() {thisRock.node_name})
+
                         'Change the button
                         Reset_Ignore()
 
@@ -547,6 +555,9 @@ Public Class MainScreen
                         'Update list
                         thisRock.last_comm = rock_list(i).last_comm
                         rock_list(i) = thisRock
+
+                        'Update GMaps
+                        InvokeWebScript("hideMarker", New String() {thisRock.node_name})
 
                         'Change the button
                         Set_Ignore()
@@ -702,6 +713,29 @@ Public Class MainScreen
 
     Friend Sub refresh_page_button_Click(sender As Object, e As EventArgs) Handles refresh_page_button.Click
         WebBrowser1.Navigate(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "GMaps.html"))
+    End Sub
+
+    Private Sub repopulate_map_button_Click(sender As Object, e As EventArgs) Handles repopulate_map_button.Click
+        For i As Integer = 0 To rock_list.Count - 1
+            Dim thisRock As talon_node = rock_list(i)
+            Dim thisRockLat = RockToLatitude(thisRock)
+            Dim thisRockLong = RockToLongitude(thisRock)
+
+            If (thisRockLat <> 0 Or thisRockLong <> 0) Then
+                If (IsNothing(ComboBox1.Tag) = False) Then
+                    If (ComboBox1.Tag.ToString.Contains(thisRock.node_name)) Then
+                        InvokeWebScript("highlightMarker", _
+                                        New String() {thisRock.node_name, thisRockLat, thisRockLong})
+                    Else
+                        InvokeWebScript("updateMarker", _
+                                        New String() {thisRock.node_name, thisRockLat, thisRockLong})
+                    End If
+                Else
+                    InvokeWebScript("updateMarker", _
+                                    New String() {thisRock.node_name, thisRockLat, thisRockLong})
+                End If
+            End If
+        Next
     End Sub
 
     Friend Sub RockStatusTimer_Tick(sender As Object, e As EventArgs) Handles RockStatusTimer.Tick
@@ -1040,7 +1074,7 @@ Public Class MainScreen
             newEvent.node_name = thisRock.node_name
             newEvent.new_flag = True
             newEvent.ignore_flag = False
-            newEvent.event_name = newEvent.time.ToString("dd MMM yyyy -- HH:mm:ss")
+            newEvent.event_name = newEvent.time.ToString("dd MMM yyyy - HH:mm:ss.ff")
 
             'Add event to event list
             event_list.Add(newEvent)
@@ -1094,4 +1128,6 @@ Public Class MainScreen
             boxGraphics.FillRectangle(blackBrush, xPos2, MMTTY_Console.monitorBar.Location.Y + 5, MMTTY_Console.monitorBar.Size.Height - 10, MMTTY_Console.monitorBar.Size.Height - 10)
         End If
     End Sub
+
+    
 End Class

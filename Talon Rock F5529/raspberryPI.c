@@ -10,6 +10,7 @@
 
 unsigned int raspberryPISec = 0;
 unsigned int raspberryPIEnabled = 0;
+unsigned int raspberryPISensorTripTimer = 0;
 
 void handleRaspberryPI() {
 
@@ -24,6 +25,8 @@ void handleRaspberryPI() {
 			P1IES &= ~BIT6;                           // P1.6 Lo->Hi edge
 			P1IFG &= ~BIT6;                           // P1.6 IFG cleared
 			P1IE |= BIT6;                             // P1.6 interrupt enabled
+
+			raspberryPIEnabled = TRUE;
 		} //if()
 	} else {
 		//TODO: (Backburner) Do some watch dog type stuff
@@ -37,14 +40,12 @@ __interrupt void Port_1(void)
 	//Toggle an LED
 	P1OUT ^= BIT0;
 
-//	switch(P1IFG) {
-//	case BIT6:
-	//Add message to message queue
-	addMessageQueue(DETECT_MESSAGE, "");
-//		break;
-//	default: break;
-//	} //switch()
+	if (raspberryPISensorTripTimer >= MIN_RASP_PI_WAIT_BETWEEN_DETECTIONS) {
+		//Add message to message queue
+		addMessageQueue(DETECT_MESSAGE, "");
 
-//	P1IFG &= ~BIT6;                         // Clear P1.6 IFG
+		raspberryPISensorTripTimer = 0;
+	} //if()
+
 	P1IFG = 0; //Clear the IFG
 } //Port_1()

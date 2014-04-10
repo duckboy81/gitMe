@@ -2,6 +2,8 @@
 #include "XBeeModule.h"
 
 //Initialize global variables
+unsigned int statusReportTimeWait = 0;  //In seconds (Max value 65536)
+char initialStatusSent = FALSE;
 unsigned char gpsComplete = 0;
 char* gpsPositionString = NULL;
 const long long exfilAddress = EXFIL_XBEE_ADDR;
@@ -433,12 +435,33 @@ __interrupt void Timer_A(void)
 {
 #if !EXFIL_NODE
 	//Add to timer
-	raspberryPISec++;
+	if (raspberryPISec <= MIN_RASP_PI_WAIT) {
+		raspberryPISec++;
+	} //if()
+
+	//Add to timer
+	if (raspberryPISensorTripTimer <= MIN_RASP_PI_WAIT_BETWEEN_DETECTIONS) {
+		raspberryPISensorTripTimer++;
+	} //if()
 #else
 	if (exfilObject.time_since_last_tx != -1) {
 		exfilObject.time_since_last_tx++;
 	} //if()
 #endif
+
+	//Add to timer
+	if (statusReportTimeWait <= INITIAL_STATUS_REPORT_SEC && !initialStatusSent) {
+		statusReportTimeWait++;
+	} else if (!initialStatusSent) {
+		addMessageQueue(STATUS_MESSAGE, "");
+		initialStatusSent = TRUE;
+		statusReportTimeWait = 0;
+	} else if (statusReportTimeWait <= STATUS_REPORT_INTERVAL) {
+		statusReportTimeWait++;
+	} else {
+		addMessageQueue(STATUS_MESSAGE, "");
+		statusReportTimeWait = 0;
+	} //if-else()
 
 	//Wake CPU -- allows us to trigger message checks every second
 	__bic_SR_register_on_exit(LPM0_bits);
