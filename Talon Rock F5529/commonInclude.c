@@ -84,6 +84,9 @@ void handleMessageQueue() {
 
 				//(xbee) send the actual message
 				sendMessage(EXFIL_XBEE_ADDR, current_message->message);
+
+				//Reset the status update timer
+				statusReportTimeWait = 0;
 				break;
 
 			case MSG_EXFIL_ACK_REQ:

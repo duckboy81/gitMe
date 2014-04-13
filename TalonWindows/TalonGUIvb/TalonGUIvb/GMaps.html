@@ -41,6 +41,7 @@
 		} //checkGoogleActive()
 	
 		function initialize() {
+		alert("Initializing");
 			if (checkGoogleInactive()) return false;
 		
 			var map_canvas = document.getElementById('map_canvas');
@@ -53,6 +54,7 @@
 		} //initialize()
 		
 		function addMarker(id, posLat, posLong) {
+		alert("Adding Marker");
 			if (checkGoogleInactive()) return false;
 		
 			if (posLat != 0 || posLong != 0) {
@@ -67,6 +69,7 @@
 		} //addMarker()
 		
 		function addBlueMarker(id, posLat, posLong) {
+		alert("Adding Blue Marker");
 			if (checkGoogleInactive()) return false;
 		
 			if (posLat != 0 || posLong != 0) {
@@ -81,6 +84,7 @@
 		} //addBlueMarker()
 		
 		function removeMarker(id) {
+		alert("Removing Marker");
 			if (checkGoogleInactive()) return false;
 			
 			try {
@@ -89,6 +93,7 @@
 		} //removeMarker()
 		
 		function centerMap(id) {
+		alert("Centering Marker");
 			if (checkGoogleInactive()) return false;
 		
 			try{
@@ -97,6 +102,7 @@
 		} //centerMap()
 		
 		function updateMarker(id, posLat, posLong) {
+		alert("Updating Marker");
 			if (checkGoogleInactive()) return false;
 			if (posLat == 0 && posLong == 0) return false;
 			
@@ -115,6 +121,7 @@
 		} //updateMarker
 		
 		function moveMarker(id, posLat, posLong) {
+		alert("Moving Marker");
 			if (checkGoogleInactive()) return false;
 			if (posLat == 0 && posLong == 0) return false;
 		
@@ -133,6 +140,7 @@
 		} //moveMarker()
 		
 		function highlightMarker(id, posLat, posLong) {
+		alert("Highlighting Marker");
 			if (checkGoogleInactive()) return false;
 			
 			//De-highlight the old marker
@@ -158,6 +166,7 @@
 		} //highlightMarker()
 		
 		function hideMarker(id) {
+		alert("Hiding Marker");
 			if (checkGoogleInactive()) return false;
 		
 			markers[id].setVisible(false);
@@ -165,6 +174,7 @@
 		
 		//Will return whether or not the marker was able to be shown
 		function showMarker(id, posLat, posLong) {
+		alert("Showing Marker");
 			if (checkGoogleInactive()) return false;
 			if (posLat == 0 && posLong == 0) return false;
 		

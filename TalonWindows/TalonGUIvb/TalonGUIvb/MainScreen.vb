@@ -314,20 +314,6 @@ Public Class MainScreen
         For i As Integer = 0 To event_list.Count - 1
             Dim thisEvent As talon_event = event_list(i)
 
-            'Check filter by node
-            If (IsNothing(selectedNode) = False) Then
-                If (selectedNode <> "Show All" And selectedNode.ToString.Contains(thisEvent.node_name) = False) Then
-                    Continue For
-                End If
-            End If
-
-            'Check filter by type
-            If (IsNothing(selectedType) = False) Then
-                If (selectedType <> "Show All" And selectedType.ToString.Contains(thisEvent.message_type) = False) Then
-                    Continue For
-                End If
-            End If
-
             'Add to list
             perEventUpdateName = thisEvent.event_name
 
@@ -351,11 +337,34 @@ Public Class MainScreen
                 perEventUpdateName = perEventUpdateName + " (new)"
             End If
 
+            'Add type to name (hidden)
+            perEventUpdateName = perEventUpdateName + "                                    " + thisEvent.message_type
+
             'Add the final name to the list
             If (ListBox1.Items.Count = i) Then
                 ListBox1.Items.Add(perEventUpdateName)
             Else
                 ListBox1.Items(i) = perEventUpdateName
+            End If
+        Next
+
+        For i As Integer = 0 To ListBox1.Items.Count - 1
+            'Check filter by node
+            If (IsNothing(selectedNode) = False) Then
+                If (selectedNode <> "Show All" And ListBox1.Items(i).ToString.Contains(selectedNode.ToString) = False) Then
+                    ListBox1.Items.RemoveAt(i)
+                    i = 0
+                End If
+            End If
+        Next
+
+        For i As Integer = 0 To ListBox1.Items.Count - 1
+            'Check filter by type
+            If (IsNothing(selectedType) = False) Then
+                If (selectedType <> "Show All" And ListBox1.Items(i).ToString.Contains(selectedType.ToString) = False) Then
+                    ListBox1.Items.RemoveAt(i)
+                    i = 0
+                End If
             End If
         Next
 
@@ -1066,6 +1075,7 @@ Public Class MainScreen
                     newEvent.message_type = "Detection Alarm"
 
                     thisRock.number_of_detections = thisRock.number_of_detections + 1
+
             End Select
 
             'Event list update
@@ -1102,6 +1112,11 @@ Public Class MainScreen
                 rock_list.Add(thisRock)
             Else
                 rock_list(found_rock) = thisRock
+            End If
+
+            'Update selected info
+            If (ComboBox1.Tag = thisRock.node_name) Then
+                ComboBox1_SelectedValueChanged(Nothing, Nothing)
             End If
 
             'Enable the combobox if needed
