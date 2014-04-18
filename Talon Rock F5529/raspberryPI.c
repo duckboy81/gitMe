@@ -29,7 +29,7 @@ void handleRaspberryPI() {
 			raspberryPIEnabled = TRUE;
 		} //if()
 	} else {
-		//TODO: (Backburner) Do some watch dog type stuff
+		//TODO: (If time develop this) Do some watch dog type stuff
 	} //if-else()
 } //handleRaspberryPI()
 

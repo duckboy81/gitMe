@@ -26,16 +26,12 @@ Partial Class MainScreen
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(MainScreen))
         Me.SplitContainer1 = New System.Windows.Forms.SplitContainer()
         Me.mark_unread_button = New System.Windows.Forms.Button()
-        Me.nodeSelection = New System.Windows.Forms.ComboBox()
         Me.ignore_msg_button = New System.Windows.Forms.Button()
         Me.event_msg_type = New System.Windows.Forms.Label()
-        Me.typeSelection = New System.Windows.Forms.ComboBox()
         Me.event_speed_label = New System.Windows.Forms.Label()
-        Me.Label1 = New System.Windows.Forms.Label()
         Me.event_node_name_label = New System.Windows.Forms.Label()
         Me.ListBox1 = New System.Windows.Forms.ListBox()
         Me.Label12 = New System.Windows.Forms.Label()
-        Me.Label2 = New System.Windows.Forms.Label()
         Me.Label4 = New System.Windows.Forms.Label()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.delete_node_button = New System.Windows.Forms.Button()
@@ -66,6 +62,7 @@ Partial Class MainScreen
         Me.Label10 = New System.Windows.Forms.Label()
         Me.Label9 = New System.Windows.Forms.Label()
         Me.RockStatusTimer = New System.Windows.Forms.Timer(Me.components)
+        Me.Label1 = New System.Windows.Forms.Label()
         CType(Me.SplitContainer1, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainer1.Panel1.SuspendLayout()
         Me.SplitContainer1.Panel2.SuspendLayout()
@@ -85,17 +82,14 @@ Partial Class MainScreen
         '
         'SplitContainer1.Panel1
         '
+        Me.SplitContainer1.Panel1.Controls.Add(Me.Label1)
         Me.SplitContainer1.Panel1.Controls.Add(Me.mark_unread_button)
-        Me.SplitContainer1.Panel1.Controls.Add(Me.nodeSelection)
         Me.SplitContainer1.Panel1.Controls.Add(Me.ignore_msg_button)
         Me.SplitContainer1.Panel1.Controls.Add(Me.event_msg_type)
-        Me.SplitContainer1.Panel1.Controls.Add(Me.typeSelection)
         Me.SplitContainer1.Panel1.Controls.Add(Me.event_speed_label)
-        Me.SplitContainer1.Panel1.Controls.Add(Me.Label1)
         Me.SplitContainer1.Panel1.Controls.Add(Me.event_node_name_label)
         Me.SplitContainer1.Panel1.Controls.Add(Me.ListBox1)
         Me.SplitContainer1.Panel1.Controls.Add(Me.Label12)
-        Me.SplitContainer1.Panel1.Controls.Add(Me.Label2)
         Me.SplitContainer1.Panel1.Controls.Add(Me.Label4)
         Me.SplitContainer1.Panel1.Controls.Add(Me.Label3)
         '
@@ -134,18 +128,6 @@ Partial Class MainScreen
         Me.mark_unread_button.Text = "Mark Unread"
         Me.mark_unread_button.UseVisualStyleBackColor = True
         '
-        'nodeSelection
-        '
-        Me.nodeSelection.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.nodeSelection.FlatStyle = System.Windows.Forms.FlatStyle.Popup
-        Me.nodeSelection.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.nodeSelection.FormattingEnabled = True
-        Me.nodeSelection.Items.AddRange(New Object() {"Show All"})
-        Me.nodeSelection.Location = New System.Drawing.Point(32, 26)
-        Me.nodeSelection.Name = "nodeSelection"
-        Me.nodeSelection.Size = New System.Drawing.Size(169, 24)
-        Me.nodeSelection.TabIndex = 1
-        '
         'ignore_msg_button
         '
         Me.ignore_msg_button.Enabled = False
@@ -167,38 +149,16 @@ Partial Class MainScreen
         Me.event_msg_type.Size = New System.Drawing.Size(0, 16)
         Me.event_msg_type.TabIndex = 3
         '
-        'typeSelection
-        '
-        Me.typeSelection.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.typeSelection.FlatStyle = System.Windows.Forms.FlatStyle.Popup
-        Me.typeSelection.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.typeSelection.FormattingEnabled = True
-        Me.typeSelection.Items.AddRange(New Object() {"Show All", "Awake Beacon", "Detection Alarm", "GPS Update"})
-        Me.typeSelection.Location = New System.Drawing.Point(32, 76)
-        Me.typeSelection.Name = "typeSelection"
-        Me.typeSelection.Size = New System.Drawing.Size(169, 24)
-        Me.typeSelection.TabIndex = 2
-        '
         'event_speed_label
         '
         Me.event_speed_label.AutoSize = True
+        Me.event_speed_label.Enabled = False
         Me.event_speed_label.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.event_speed_label.Location = New System.Drawing.Point(259, 128)
         Me.event_speed_label.Name = "event_speed_label"
         Me.event_speed_label.Size = New System.Drawing.Size(0, 16)
         Me.event_speed_label.TabIndex = 2
-        '
-        'Label1
-        '
-        Me.Label1.AutoSize = True
-        Me.Label1.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label1.Location = New System.Drawing.Point(63, 8)
-        Me.Label1.MinimumSize = New System.Drawing.Size(115, 0)
-        Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(115, 16)
-        Me.Label1.TabIndex = 3
-        Me.Label1.Text = "Filter By Node"
-        Me.Label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
+        Me.event_speed_label.Visible = False
         '
         'event_node_name_label
         '
@@ -214,33 +174,23 @@ Partial Class MainScreen
         Me.ListBox1.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.ListBox1.FormattingEnabled = True
         Me.ListBox1.ItemHeight = 16
-        Me.ListBox1.Location = New System.Drawing.Point(8, 111)
+        Me.ListBox1.Location = New System.Drawing.Point(8, 15)
         Me.ListBox1.Name = "ListBox1"
         Me.ListBox1.ScrollAlwaysVisible = True
-        Me.ListBox1.Size = New System.Drawing.Size(217, 100)
+        Me.ListBox1.Size = New System.Drawing.Size(217, 180)
         Me.ListBox1.TabIndex = 3
         '
         'Label12
         '
         Me.Label12.AutoSize = True
+        Me.Label12.Enabled = False
         Me.Label12.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.Label12.Location = New System.Drawing.Point(236, 107)
         Me.Label12.Name = "Label12"
         Me.Label12.Size = New System.Drawing.Size(103, 16)
         Me.Label12.TabIndex = 1
         Me.Label12.Text = "Travel Speed"
-        '
-        'Label2
-        '
-        Me.Label2.AutoSize = True
-        Me.Label2.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label2.Location = New System.Drawing.Point(60, 58)
-        Me.Label2.MinimumSize = New System.Drawing.Size(115, 0)
-        Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(115, 16)
-        Me.Label2.TabIndex = 3
-        Me.Label2.Text = "Filter By Type"
-        Me.Label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
+        Me.Label12.Visible = False
         '
         'Label4
         '
@@ -482,12 +432,14 @@ Partial Class MainScreen
         '
         'NumericUpDown1
         '
+        Me.NumericUpDown1.Enabled = False
         Me.NumericUpDown1.Location = New System.Drawing.Point(453, 337)
         Me.NumericUpDown1.Maximum = New Decimal(New Integer() {999, 0, 0, 0})
         Me.NumericUpDown1.Name = "NumericUpDown1"
         Me.NumericUpDown1.Size = New System.Drawing.Size(57, 29)
         Me.NumericUpDown1.TabIndex = 15
         Me.NumericUpDown1.Value = New Decimal(New Integer() {999, 0, 0, 0})
+        Me.NumericUpDown1.Visible = False
         '
         'show_MTTY_console_button
         '
@@ -537,27 +489,40 @@ Partial Class MainScreen
         'Label10
         '
         Me.Label10.AutoSize = True
+        Me.Label10.Enabled = False
         Me.Label10.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.Label10.Location = New System.Drawing.Point(514, 344)
         Me.Label10.Name = "Label10"
         Me.Label10.Size = New System.Drawing.Size(70, 16)
         Me.Label10.TabIndex = 8
         Me.Label10.Text = "detections"
+        Me.Label10.Visible = False
         '
         'Label9
         '
         Me.Label9.AutoSize = True
+        Me.Label9.Enabled = False
         Me.Label9.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.Label9.Location = New System.Drawing.Point(373, 344)
         Me.Label9.Name = "Label9"
         Me.Label9.Size = New System.Drawing.Size(78, 16)
         Me.Label9.TabIndex = 8
         Me.Label9.Text = "Limit to past"
+        Me.Label9.Visible = False
         '
         'RockStatusTimer
         '
         Me.RockStatusTimer.Enabled = True
         Me.RockStatusTimer.Interval = 1000
+        '
+        'Label1
+        '
+        Me.Label1.AutoSize = True
+        Me.Label1.Location = New System.Drawing.Point(8, 201)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(85, 13)
+        Me.Label1.TabIndex = 6
+        Me.Label1.Text = "*All times in UTC"
         '
         'MainScreen
         '
@@ -587,11 +552,7 @@ Partial Class MainScreen
         Me.PerformLayout()
 
     End Sub
-    Friend WithEvents nodeSelection As System.Windows.Forms.ComboBox
     Friend WithEvents ListBox1 As System.Windows.Forms.ListBox
-    Friend WithEvents Label2 As System.Windows.Forms.Label
-    Friend WithEvents Label1 As System.Windows.Forms.Label
-    Friend WithEvents typeSelection As System.Windows.Forms.ComboBox
     Friend WithEvents SplitContainer1 As System.Windows.Forms.SplitContainer
     Friend WithEvents Label3 As System.Windows.Forms.Label
     Friend WithEvents event_msg_type As System.Windows.Forms.Label
@@ -629,4 +590,5 @@ Partial Class MainScreen
     Friend WithEvents Label10 As System.Windows.Forms.Label
     Friend WithEvents Label9 As System.Windows.Forms.Label
     Friend WithEvents RockStatusTimer As System.Windows.Forms.Timer
+    Friend WithEvents Label1 As System.Windows.Forms.Label
 End Class

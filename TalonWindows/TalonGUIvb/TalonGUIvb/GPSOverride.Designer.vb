@@ -62,6 +62,7 @@ Partial Class GPSOverride
         '
         'override_win_cancel
         '
+        Me.override_win_cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
         Me.override_win_cancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         Me.override_win_cancel.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.override_win_cancel.Location = New System.Drawing.Point(281, 112)
@@ -231,8 +232,10 @@ Partial Class GPSOverride
         '
         'GPSOverride
         '
+        Me.AcceptButton = Me.override_win_confirm
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.CancelButton = Me.override_win_cancel
         Me.ClientSize = New System.Drawing.Size(524, 150)
         Me.ControlBox = False
         Me.Controls.Add(Me.lng_dir)

@@ -262,32 +262,15 @@ Public Class MainScreen
         Update_ListBox1(False)
     End Sub
 
-    Private Sub nodeSelection_SelectedIndexChanged(sender As Object, e As EventArgs) Handles nodeSelection.SelectedIndexChanged
-        Update_ListBox1(False)
-    End Sub
-
-    Private Sub typeSelection_SelectedIndexChanged(sender As Object, e As EventArgs) Handles typeSelection.SelectedIndexChanged
-        Update_ListBox1(False)
-    End Sub
 
     Friend Sub Update_ListBox1(recentlyNewed As Boolean)
         'Save the currently selected one
         Dim currEventName
         Dim currEventTag = ListBox1.Tag
-        Dim selectedNode = Nothing
-        Dim selectedType = Nothing
         Dim perEventUpdateName As String
 
 
         RemoveHandler ListBox1.SelectedIndexChanged, AddressOf ListBox1_SelectedIndexChanged
-
-        If (IsNothing(nodeSelection.SelectedItem) = False) Then
-            selectedNode = nodeSelection.SelectedItem.ToString
-        End If
-
-        If (IsNothing(typeSelection.SelectedItem) = False) Then
-            selectedType = typeSelection.SelectedItem.ToString
-        End If
 
         If (IsNothing(ListBox1.SelectedItem) = False) Then
             currEventName = ListBox1.SelectedItem.ToString
@@ -337,34 +320,11 @@ Public Class MainScreen
                 perEventUpdateName = perEventUpdateName + " (new)"
             End If
 
-            'Add type to name (hidden)
-            perEventUpdateName = perEventUpdateName + "                                    " + thisEvent.message_type
-
             'Add the final name to the list
             If (ListBox1.Items.Count = i) Then
                 ListBox1.Items.Add(perEventUpdateName)
             Else
                 ListBox1.Items(i) = perEventUpdateName
-            End If
-        Next
-
-        For i As Integer = 0 To ListBox1.Items.Count - 1
-            'Check filter by node
-            If (IsNothing(selectedNode) = False) Then
-                If (selectedNode <> "Show All" And ListBox1.Items(i).ToString.Contains(selectedNode.ToString) = False) Then
-                    ListBox1.Items.RemoveAt(i)
-                    i = 0
-                End If
-            End If
-        Next
-
-        For i As Integer = 0 To ListBox1.Items.Count - 1
-            'Check filter by type
-            If (IsNothing(selectedType) = False) Then
-                If (selectedType <> "Show All" And ListBox1.Items(i).ToString.Contains(selectedType.ToString) = False) Then
-                    ListBox1.Items.RemoveAt(i)
-                    i = 0
-                End If
             End If
         Next
 
@@ -459,11 +419,13 @@ Public Class MainScreen
                 ignore_node_button.Enabled = True
 
                 'Highlight marker
-                InvokeWebScript("highlightMarker", New String() {thisRock.node_name, _
-                                                                 RockToLatitude(thisRock), _
-                                                                 RockToLongitude(thisRock)})
+                If (thisRock.ignore_flag = False) Then
+                    InvokeWebScript("highlightMarker", New String() {thisRock.node_name, _
+                                                                     RockToLatitude(thisRock), _
+                                                                     RockToLongitude(thisRock)})
 
-                Exit For
+                    Exit For
+                End If
             End If
         Next
     End Sub
@@ -489,11 +451,7 @@ Public Class MainScreen
 
                     If (ComboBox1.Tag.ToString.Contains(thisRock.node_name)) Then
 
-                        'Notify user of algorithm
-                        MsgBox("Will attempt to recover most recent, not-ignored GPS data from event history for this node.", MsgBoxStyle.Information, "Automatic Coordinate Update")
-
-                        'Disable the override, find the most recent coordinates from the batch that we haven't ignored.  If none, set 0's.
-                        'TODO: Update this to interact with the event history
+                        'Disable the override, reset coordinates to 0
                         thisRock.gps_lat_deg = 0
                         thisRock.gps_lat_min = 0
                         thisRock.gps_lat_sec = 0
@@ -510,10 +468,12 @@ Public Class MainScreen
                         ComboBox1_SelectedValueChanged(Nothing, Nothing)
 
                         'Update webpage map coordinates
-                        InvokeWebScript("highlightMarker", _
-                                        New String() {thisRock.node_name, _
-                                                      RockToLatitude(thisRock), _
-                                                      RockToLongitude(thisRock)})
+                        If (thisRock.ignore_flag = False) Then
+                            InvokeWebScript("highlightMarker", _
+                                            New String() {thisRock.node_name, _
+                                                          RockToLatitude(thisRock), _
+                                                          RockToLongitude(thisRock)})
+                        End If
 
                         'Change the button
                         Reset_GPS_Override()
@@ -730,7 +690,7 @@ Public Class MainScreen
             Dim thisRockLat = RockToLatitude(thisRock)
             Dim thisRockLong = RockToLongitude(thisRock)
 
-            If (thisRockLat <> 0 Or thisRockLong <> 0) Then
+            If ((thisRockLat <> 0 Or thisRockLong <> 0) And thisRock.ignore_flag = False) Then
                 If (IsNothing(ComboBox1.Tag) = False) Then
                     If (ComboBox1.Tag.ToString.Contains(thisRock.node_name)) Then
                         InvokeWebScript("highlightMarker", _
@@ -788,6 +748,7 @@ Public Class MainScreen
 
     Private Sub show_MTTY_console_button_Click(sender As Object, e As EventArgs) Handles show_MTTY_console_button.Click
         MMTTY_Console.Show()
+        MMTTY_Console.Focus()
     End Sub
 
     '**************** Time to handle all MMTTY window events ********************
@@ -1091,19 +1052,6 @@ Public Class MainScreen
 
             'Refresh listbox
             Update_ListBox1(False)
-
-            'Check to see if we need to add this node to the node list selection box
-            Dim found_node_in_box As Boolean = False
-            For Each thisNode As String In nodeSelection.Items
-                If (thisNode.Contains(thisRock.node_name)) Then
-                    found_node_in_box = True
-                    Exit For
-                End If
-            Next
-
-            If (found_node_in_box = False) Then
-                nodeSelection.Items.Add(thisRock.node_name)
-            End If
 
             'Update last communication timer
             thisRock.last_comm = New Date(1)

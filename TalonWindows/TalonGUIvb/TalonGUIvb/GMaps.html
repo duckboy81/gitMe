@@ -41,27 +41,26 @@
 		} //checkGoogleActive()
 	
 		function initialize() {
-		alert("Initializing");
 			if (checkGoogleInactive()) return false;
 		
 			var map_canvas = document.getElementById('map_canvas');
 			var map_options = {
-			  center: new google.maps.LatLng(0, 0),
-			  zoom: 1,
-			  mapTypeId: google.maps.MapTypeId.ROADMAP
+			  center: new google.maps.LatLng(39.0080555, -104.88555),
+			  zoom: 16,
+			  mapTypeId: google.maps.MapTypeId.HYBRID
 			}
 			map = new google.maps.Map(map_canvas, map_options)
 		} //initialize()
 		
 		function addMarker(id, posLat, posLong) {
-		alert("Adding Marker");
 			if (checkGoogleInactive()) return false;
-		
+			
 			if (posLat != 0 || posLong != 0) {
 				markers[id] = new google.maps.Marker({
 					map: map,
 					position: new google.maps.LatLng(posLat, posLong),
-					icon: "https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png"
+					icon: "https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png",
+					title: id
 				});
 				return true;
 			} //if()
@@ -69,14 +68,14 @@
 		} //addMarker()
 		
 		function addBlueMarker(id, posLat, posLong) {
-		alert("Adding Blue Marker");
 			if (checkGoogleInactive()) return false;
-		
+
 			if (posLat != 0 || posLong != 0) {
 				markers[id] = new google.maps.Marker({
 					map: map,
 					position: new google.maps.LatLng(posLat, posLong),
-					icon: "https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png"
+					icon: "https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png",
+					title: id
 				});
 				return true;
 			} //if()
@@ -84,7 +83,6 @@
 		} //addBlueMarker()
 		
 		function removeMarker(id) {
-		alert("Removing Marker");
 			if (checkGoogleInactive()) return false;
 			
 			try {
@@ -93,25 +91,24 @@
 		} //removeMarker()
 		
 		function centerMap(id) {
-		alert("Centering Marker");
 			if (checkGoogleInactive()) return false;
 		
 			try{
 				map.setCenter( markers[id].position );
 			} catch (err) { }
+			
 		} //centerMap()
 		
 		function updateMarker(id, posLat, posLong) {
-		alert("Updating Marker");
 			if (checkGoogleInactive()) return false;
 			if (posLat == 0 && posLong == 0) return false;
 			
 			//Update marker information
 			try {
 				if (posLat == 0 && posLong == 0) {
-					markers[id].visible = true;
-				} else {
 					markers[id].visible = false;
+				} else {
+					markers[id].visible = true;
 				} //if-else
 				markers[id].setCenter(new google.maps.LatLng(posLat, posLong));
 			} catch (err) {
@@ -121,15 +118,14 @@
 		} //updateMarker
 		
 		function moveMarker(id, posLat, posLong) {
-		alert("Moving Marker");
 			if (checkGoogleInactive()) return false;
 			if (posLat == 0 && posLong == 0) return false;
 		
 			try {
 				if (posLat == 0 && posLong == 0) {
-					markers[id].visible = true;
-				} else {
 					markers[id].visible = false;
+				} else {
+					markers[id].visible = true;
 				} //if-else
 				markers[id].setPosition(new google.maps.LatLng(posLat, posLong) );	
 			} catch (err) {
@@ -140,21 +136,20 @@
 		} //moveMarker()
 		
 		function highlightMarker(id, posLat, posLong) {
-		alert("Highlighting Marker");
 			if (checkGoogleInactive()) return false;
 			
 			//De-highlight the old marker
 			try {
 				markers[highlightID].setIcon("https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png")
 			} catch (err) { }
-			
 			//Highlight a new marker
 			try {
 				if (posLat == 0 && posLong == 0) {
-					markers[id].visible = true;
-				} else {
 					markers[id].visible = false;
+				} else {
+					markers[id].visible = true;
 				} //if-else
+				
 				markers[id].setIcon("https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png")
 			} catch (err) {
 				if (addBlueMarker(id, posLat, posLong)) {
@@ -166,18 +161,18 @@
 		} //highlightMarker()
 		
 		function hideMarker(id) {
-		alert("Hiding Marker");
 			if (checkGoogleInactive()) return false;
-		
-			markers[id].setVisible(false);
+
+			try {
+				markers[id].setVisible(false);
+			} catch (err) { }
 		} //hideMarker()
 		
 		//Will return whether or not the marker was able to be shown
 		function showMarker(id, posLat, posLong) {
-		alert("Showing Marker");
 			if (checkGoogleInactive()) return false;
 			if (posLat == 0 && posLong == 0) return false;
-		
+
 			try {
 				markers[id].setVisible(true);
 			}catch (err) {

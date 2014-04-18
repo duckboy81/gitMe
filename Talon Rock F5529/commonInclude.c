@@ -1,5 +1,6 @@
 #include "commonInclude.h"
 #include "XBeeModule.h"
+#include "gpsModule.h"
 
 //Initialize global variables
 unsigned int statusReportTimeWait = 0;  //In seconds (Max value 65536)
@@ -394,9 +395,6 @@ exfil_queue* lastQueuedNode() {
 		tempExfilQueuePointer = tempExfilQueuePointer->next_queued_node;
 	} //while()
 
-	//TODO: Remove the following line, bad code.
-	//return exfilObject.topExfilQueue;
-
 	return tempExfilQueuePointer;
 } //lastQueuedNode()
 
@@ -447,7 +445,7 @@ __interrupt void Timer_A(void)
 		raspberryPISensorTripTimer++;
 	} //if()
 #else
-	if (exfilObject.time_since_last_tx != -1) {
+	if (exfilObject.time_since_last_tx != -1 && exfilObject.time_since_last_tx <= MIN_TIME_BETWEEN_EXFIL_MSGS) {
 		exfilObject.time_since_last_tx++;
 	} //if()
 #endif
@@ -465,6 +463,11 @@ __interrupt void Timer_A(void)
 		addMessageQueue(STATUS_MESSAGE, "");
 		statusReportTimeWait = 0;
 	} //if-else()
+
+	//Increment second counter
+	if (isGPSOn()) {
+		incrementGPSTimeCounter();
+	} //if()
 
 	//Wake CPU -- allows us to trigger message checks every second
 	__bic_SR_register_on_exit(LPM0_bits);

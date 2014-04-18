@@ -22,10 +22,6 @@ void initializeExfilRadio() {
 	P2DIR |= BIT2;		//P2.2 output
 	P2OUT |= BIT2;		//P2.2 on
 
-	//TODO: MAYBE REMOVE THIS?
-	//P2DIR |= BIT0;                            // P2.0/TA1.1
-	//P2SEL |= BIT0;                            // P2.0 and TA1.1 options
-
 	//AFSK (Tone Generator)
 	P2DIR |= BIT0;							// P2.0 (TA1.1 output?)
 	P2SEL |= BIT0;							// P2.0 options

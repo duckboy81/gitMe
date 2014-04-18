@@ -45,8 +45,6 @@ char handleGPSData(void) {
 	char* token_pointer;
 
 	if (mainGPS.GPGGAflag) {
-		//Increment second counter
-		mainGPS.secLapsed++;
 
 		//Copy data into new string
 		strcpy(temp_GPGGAinfo, mainGPS.GPGGAinfo);
@@ -80,25 +78,39 @@ char handleGPSData(void) {
 				//Place data in correct place in gps structure
 				switch(i) {
 				case 1://Timedate
-					strcpy(mainGPS.zuluTime, token_pointer);
+					if (*token_pointer != '+') {
+						strcpy(mainGPS.zuluTime, token_pointer);
+					} //if()
 					break;
 				case 2://Latitude
-					strcpy(mainGPS.latitude, token_pointer);
+					if (*token_pointer != '+') {
+						strcpy(mainGPS.latitude, token_pointer);
+					} //if()
 					break;
 				case 3://Lat-Direction
-					strcpy(mainGPS.latitude_dir, token_pointer);
+					if (*token_pointer != '+') {
+						strcpy(mainGPS.latitude_dir, token_pointer);
+					} //if()
 					break;
 				case 4://Longitude
-					strcpy(mainGPS.longitude, token_pointer);
+					if (*token_pointer != '+') {
+						strcpy(mainGPS.longitude, token_pointer);
+					} //if()
 					break;
 				case 5://Lng-Direction
-					strcpy(mainGPS.longitude_dir, token_pointer);
+					if (*token_pointer != '+') {
+						strcpy(mainGPS.longitude_dir, token_pointer);
+					} //if()
 					break;
 				case 6: //GPS Fix quality
-					strcpy(mainGPS.fix_quality, token_pointer);
+					if (*token_pointer != '+') {
+						strcpy(mainGPS.fix_quality, token_pointer);
+					} //if()
 					break;
 				case 7: //GPS Num Satellites
-					strcpy(mainGPS.num_satellites, token_pointer);
+					if (*token_pointer != '+') {
+						strcpy(mainGPS.num_satellites, token_pointer);
+					} //if()
 					break;
 				default:
 					break;
@@ -163,7 +175,8 @@ char isGPSFinished() {
 		//Setup GPS output string
 		compileGPSToString();
 
-		//Send coordinates to EXFIL node
+		//Send coordinates to EXFIL node * 2
+		addMessageQueue(GPS_MESSAGE, gpsPositionString);
 		addMessageQueue(GPS_MESSAGE, gpsPositionString);
 
 		return TRUE;
@@ -171,6 +184,10 @@ char isGPSFinished() {
 
 	return FALSE;
 } //isGPSLocked()
+
+void incrementGPSTimeCounter() {
+	mainGPS.secLapsed++;
+} //incrementGPSTimeCounter
 
 void turnOnGPS() {
 	P8OUT &= ~BIT1;
@@ -200,7 +217,7 @@ char isGPSOn() {
 #pragma vector=USCI_A1_VECTOR
 __interrupt void USCI1RX_ISR(void) {
 
-	char availableData;
+	char availableData, currentBuffer;
 
 	//See UCAxIV, Interrupt Vector Generator desc. (pg 997)
 	switch(__even_in_range(UCA1IV, 4)) {
@@ -208,15 +225,21 @@ __interrupt void USCI1RX_ISR(void) {
 	case 2:				//Vector 2: UCRXIFG
 
 		availableData = (mainGPS.GPGGAinfo[4] == 'G' && mainGPS.GPGGAinfo[5] == 'A');
+		currentBuffer = UCA1RXBUF;
 
 		//Check for delimiter
-		if (UCA1RXBUF == '$') {
+		if (currentBuffer == '$') {
 			mainGPS.bufferPosition = 0;
 			mainGPS.bufferRemaining = -1;
 		} //if()
 
+		//Check to see if we rx'd the special character already
+		if (mainGPS.bufferPosition == -1) {
+			return;
+		}
+
 		//Check for near-end of tx
-		if (UCA1RXBUF == '*') {
+		if (currentBuffer == '*' && availableData == GPGGA) {
 			mainGPS.bufferRemaining = 3;
 		} //if()
 
@@ -224,11 +247,21 @@ __interrupt void USCI1RX_ISR(void) {
 		if (mainGPS.bufferPosition <= 5 || (mainGPS.bufferPosition > 5 && availableData == GPGGA)) {
 
 			//Add data to buffer
-			if (mainGPS.bufferPosition >= 0 && mainGPS.bufferPosition < (MAX_GPS_BUFFER_LENGTH - 1)) {
-				mainGPS.GPGGAinfo[mainGPS.bufferPosition] = UCA1RXBUF;
+			//if (mainGPS.bufferPosition >= 0 && mainGPS.bufferPosition < (MAX_GPS_BUFFER_LENGTH - 2)) {
+				//Need to make sure commas are not back to back (strtok issue)
+				if (mainGPS.bufferPosition > 0 &&
+						mainGPS.GPGGAinfo[mainGPS.bufferPosition - 1] == ',' &&
+						currentBuffer == ',') {
+					mainGPS.GPGGAinfo[mainGPS.bufferPosition] = '+';
+					mainGPS.bufferPosition++;
+					mainGPS.bufferRemaining--;
+				} //if()
+
+
+				mainGPS.GPGGAinfo[mainGPS.bufferPosition] = currentBuffer;
 				mainGPS.bufferPosition++;
 				mainGPS.bufferRemaining--;
-			} //if()
+			//} //if()
 		} //if()
 
 		//Handle completed buffer
@@ -239,6 +272,9 @@ __interrupt void USCI1RX_ISR(void) {
 				//Polling will be re-enabled as the power state of the CPU
 				// is now active.  Set a flag for the poll to look for.
 				mainGPS.GPGGAflag = 1;
+
+				//Disable any more input until we get the special character
+				mainGPS.bufferPosition = -1;
 
 				//Disable USCI_A1 RX interrupt to prevent any memory collisions
 //				UCA1IE &= ~UCRXIE;

@@ -10,7 +10,7 @@
 #ifndef GPSMODULE_H_
 #define GPSMODULE_H_
 
-#define MAX_GPS_BUFFER_LENGTH 85 //Min length should be 80 to allow space for all GPGGA data
+#define MAX_GPS_BUFFER_LENGTH 100 //Min length should be 80 to allow space for all GPGGA data
 
 typedef struct {
 	/* RAW GPGGA Stream */
@@ -21,14 +21,14 @@ typedef struct {
 	unsigned int acceptableLockCount;
 	signed char bufferPosition;
 	signed char bufferRemaining;
-	unsigned char secLapsed;
+	unsigned int secLapsed;
 	char isOn;
 
 	/* Decoded GPS Data */
-	char zuluTime[11]; //eg. "170834.030"
-	char latitude[10]; //eg. "3900.3150"
+	char zuluTime[10]; //eg. "170834.30"
+	char latitude[11]; //eg. "3900.31501"
 	char latitude_dir[2]; //eg. "N"
-	char longitude[11]; //eg. "10452.5930"
+	char longitude[12]; //eg. "10452.59301"
 	char longitude_dir[2]; //eg. "W"
 	char fix_quality[2]; //eg. "2"
 	char num_satellites[3]; //eg. "03"
@@ -47,6 +47,7 @@ void initializeGPS(void);
 char handleGPSData(void);
 void compileGPSToString(void);
 char isGPSFinished(void);
+void incrementGPSTimeCounter(void);
 void turnOnGPS(void);
 void turnOffGPS(void);
 char isGPSOn(void);

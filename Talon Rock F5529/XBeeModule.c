@@ -312,6 +312,4 @@ __interrupt void USCI0RX_ISR(void) {
 #endif
 	} //if()
 
-	//TODO: Do i need this?
-	//UCA0IFG &= ~UCRXIFG;//Clear flag
 } //USCI0RX_ISR()

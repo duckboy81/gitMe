@@ -34,9 +34,6 @@
 
 #define USE_TO_PARAM 0x00
 
-//TODO: Don't think we use this anywhere
-//#define XBEE_ADDR_LENGTH 0x08
-
 //Functions
 void initXbee();
 

@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 //Loads code explicit to exfil or sensor node
-#define EXFIL_NODE 1
+#define EXFIL_NODE 0
 
 #ifndef _COMMONINCLUDE_H
 #define	_COMMONINCLUDE_H
@@ -25,11 +25,12 @@
 	//With an update rate of 1 data update per second, the below
 	//	definition will require the GPS to have XX seconds of good GPS locks
 	//	(greater than three satellites) before it reports the GPS info out.
-#define MIN_GPS_LOCK_CYCLES 60		//Max value 65536
+//TODO: Up min cycles to 60
+#define MIN_GPS_LOCK_CYCLES 10		//Max value 65536
 #define MAX_GPS_LOCK_TIME 600 		//(Standard about 600 seconds)
 
 /* radioHAM.h */
-#define MIN_TIME_BETWEEN_EXFIL_MSGS 2
+#define MIN_TIME_BETWEEN_EXFIL_MSGS 5
 #define PRE_MSG_TWIDDLES 40
 
 /* raspberryPI.h */
