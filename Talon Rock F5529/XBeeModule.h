@@ -70,14 +70,14 @@ unsigned char* receiveMessage();
  * Finished: 12 Feb 2014
  */
 char getChecksum(char frameType, char frameID, long long *address,
-		long reservedBytes, char broadcastRad, char transmitOpt, char *data,unsigned int dataLength);
+		long reservedBytes, char broadcastRad, char transmitOpt, char *data);
 
 
 
 void sendByte(unsigned char byte);
 void sendInt(unsigned int intToSend);
 void sendXbeeAddr(long long* xbeeAddr);
-void sendByteArray(char byteArray[],int length);
+void sendByteArray(char* byteArray);
 unsigned char receiveByte(void);
 void USCI0RX_ISR(void);
 

@@ -7,7 +7,6 @@
  * main.c
  */
 
-//TODO: ADD LMS AND BPF CONFIGURATION TO VB PROGRAM
 /*
  * LMS
  * 	Tap: 56

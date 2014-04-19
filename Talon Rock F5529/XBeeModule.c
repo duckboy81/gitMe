@@ -50,10 +50,9 @@ void initXbee() {
  */
 void sendMessage(long long xbeeAddr, char* txData){
 	//Calculate message length and checksum
-	unsigned int dataLength=strlen(txData);
 	unsigned int messageLength=strlen(txData)+TX_FRAME_LENGTH_WO_TXDATA;
 	volatile unsigned char checksum;
-	checksum=getChecksum(TX_REQUEST,GET_FRAME_ID,&xbeeAddr,RESERVED_BYTES,MAX_BROADCAST_RAD,USE_TO_PARAM,txData,dataLength);
+	checksum=getChecksum(TX_REQUEST,GET_FRAME_ID,&xbeeAddr,RESERVED_BYTES,MAX_BROADCAST_RAD,USE_TO_PARAM,txData);
 
 	//Send Delimiter
 	sendByte(START_DELIMITER);
@@ -74,13 +73,13 @@ void sendMessage(long long xbeeAddr, char* txData){
 	sendByte(USE_TO_PARAM);
 
 	//Send actual data
-	sendByteArray(txData,dataLength);
+	sendByteArray(txData);
 
 	//Send checksum
 	sendByte(checksum);
 
 	//Toggle an LED
-	P4OUT ^= BIT7;
+	//P4OUT ^= BIT7;
 } //sendMessage()
 
 /**
@@ -113,7 +112,7 @@ unsigned char* receiveMessage(){
  * Calculates checksum.
  */
 char getChecksum(char frameType, char frameID, long long *address,
-		long reservedBytes, char broadcastRad, char transmitOpt, char *data,unsigned int dataLength){
+		long reservedBytes, char broadcastRad, char transmitOpt, char *data){
 
 		volatile char checksum=0;
 		int i=0;
@@ -139,7 +138,7 @@ char getChecksum(char frameType, char frameID, long long *address,
 		checksum+=broadcastRad;
 		checksum+=transmitOpt;
 
-		for(j=0;j<dataLength;j++){
+		for(j=0;j<strlen(data);j++){
 			checksum+=*pData;
 			pData+=0x01;
 		}
@@ -181,12 +180,11 @@ void sendXbeeAddr(long long* xbeeAddr){
 	} //while()
 } //sendXbeeAddr
 
-void sendByteArray(char byteArray[],int length){
-	int i=0;
-	while(i<length){
-		sendByte(*byteArray);
-		byteArray++;
-		i++;
+void sendByteArray(char* byteArray) {
+	int i;
+
+	for(i=0; i<strlen(byteArray); i++) {
+		sendByte(byteArray[i]);
 	} //while()
 } //sendByteArray()
 
@@ -200,6 +198,8 @@ unsigned char receiveByte(void){
 //UART RX ISR: Toggles LED. Receives data and puts it into bufferSpace array.
 #pragma vector=USCI_A0_VECTOR
 __interrupt void USCI0RX_ISR(void) {
+
+	unsigned int i, checksumHolder;
 
 	//Look for delimiter
 	if (UCA0RXBUF == XBEE_START_DELIMITER) {
@@ -229,9 +229,23 @@ __interrupt void USCI0RX_ISR(void) {
 	} //if()
 
 	//Check for end of message & handle it (necessary to prevent data overwrite)
-	if (xbeeObject.bufferPosition == xbeeObject.xbeeMessageLength + 3) {
-		//Terminate the buffer
-		xbeeObject.bufferSpace[xbeeObject.bufferPosition] = '\0';
+	if (xbeeObject.bufferPosition == xbeeObject.xbeeMessageLength + 4) {
+
+		//Prevent this message from being read again
+		xbeeObject.bufferPosition = -1;
+
+		//Calculate the checksum
+		checksumHolder = 0;
+		for(i=3; i<xbeeObject.xbeeMessageLength + 4; i++) {
+			checksumHolder += xbeeObject.bufferSpace[i];
+			checksumHolder &= 0x00FF;
+		} //for()
+
+		//Check for invalid checksum
+		if (checksumHolder != 0x00FF) return;
+
+		//Terminate the buffer (eliminates the checksum from the buffer in the process)
+		xbeeObject.bufferSpace[xbeeObject.xbeeMessageLength + 3] = '\0';
 
 		xbeeObject.xbeeFrameType = xbeeObject.bufferSpace[3]; //Frame 3: Frame Type
 
@@ -274,17 +288,26 @@ __interrupt void USCI0RX_ISR(void) {
 			//Is this xbee the next in line?
 			if (!exfilObject.topExfilQueue ||
 					exfilObject.topExfilQueue->node_number != xbeeObject.xbeeSenderNodeAddr) {
+				__no_operation();
 				return;
 			} //if()
 
 			//Is the radio busy?
-			if (!isHAMReady()) return;
+			//if (!isHAMReady()) return;
+
+			//If this branch is taken, a node is trying to send its
+			//	message twice.
+			if (exfilObject.topExfilQueue->message) {
+				return;
+			} //if()
 
 			//Copy the message into a buffer
-//			exfilObject.topExfilQueue->message = malloc(sizeof(char) * (strlen(xbeeObject.bufferSpace) - 14));
-			exfilObject.topExfilQueue->message = malloc(sizeof(char) * strlen(xbeeObject.bufferSpace) + 5);
+			exfilObject.topExfilQueue->message = malloc(sizeof(char) * strlen(&xbeeObject.bufferSpace[15]));
 			strcpy(exfilObject.topExfilQueue->message, &xbeeObject.bufferSpace[15]);
 
+			exfilObject.topExfilQueue->status = EXFIL_ACCEPT_ACK;
+
+			/*
 			//Add the message to the radio and reply if successful
 			if (sendHAMString(exfilObject.topExfilQueue->message, xbeeObject.xbeeSenderNodeAddr)) {
 				exfilObject.topExfilQueue->status = EXFIL_ACCEPT_ACK_SENT;
@@ -292,6 +315,7 @@ __interrupt void USCI0RX_ISR(void) {
 				//Not successful, delete it
 				exfilObject.topExfilQueue->status = EXFIL_FIN;
 			} //if-else()
+			*/
 		} //if()
 #else
 		//Check to make sure this message came from the exfil node

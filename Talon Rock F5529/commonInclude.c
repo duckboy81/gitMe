@@ -62,7 +62,7 @@ void handleMessageQueue() {
 				break;
 
 			case MSG_SYN:
-				if (current_message->age > 120) {
+				if (current_message->age > 5) {
 					current_message->age = 0;
 
 					//(xbee) send request to exfil UGS
@@ -91,7 +91,7 @@ void handleMessageQueue() {
 				break;
 
 			case MSG_EXFIL_ACK_REQ:
-				if (current_message->age > 120) {
+				if (current_message->age > 10) {
 					current_message->age = 0;
 					current_message->status = MSG_SYN;
 
@@ -162,7 +162,7 @@ unsigned int signedStringChecksum(char* stringToChecksum) {
 	} //for()
 
 	//Invert the checksum to prevent an all zero message
-	return ~checkSum;
+	return ~(checkSum & 99);
 } //signedStringChecksum()
 
 unsigned int stringChecksum(unsigned char* stringToChecksum) {
@@ -180,6 +180,7 @@ unsigned int stringChecksum(unsigned char* stringToChecksum) {
 	return checkSum;
 } //stringChecksum()
 
+//Local message queue
 void addMessageQueue(char* messageType, char* messageToAdd) {
 
 	//Create the node pointer
@@ -256,6 +257,7 @@ void handleMessageAck(void) {
 
 } //handleMessageAck()
 
+//Local message queue
 void removeTopMessage() {
 
 	message_queue* temp_node_pointer;
@@ -274,37 +276,42 @@ void removeTopMessage() {
 	free(temp_node_pointer);
 } //removeTopMessage()
 
+//Local message queue
 message_queue* removeThisMessage(message_queue* message_to_remove) {
 
 	message_queue* temp_node_pointer = topQueuedMessage;
+	message_queue* pointer_to_return = NULL;
 
 	//The top message is the message we would like to remove
 	if (topQueuedMessage ==  message_to_remove) {
 		removeTopMessage();
-		return topQueuedMessage;
-	} //if()
+		pointer_to_return = topQueuedMessage;
 
-	//Should not be the top message at this point
-	while(temp_node_pointer->next_message != NULL) {
+	} else {
+		//Should not be the top message at this point
+		while(temp_node_pointer->next_message != NULL) {
 
-		//Check for a match
-		if (temp_node_pointer->next_message == message_to_remove) {
-			//Redirect next_message pointer
-			temp_node_pointer->next_message = message_to_remove->next_message;
+			//Check for a match
+			if (temp_node_pointer->next_message == message_to_remove) {
+				//Redirect next_message pointer
+				temp_node_pointer->next_message = message_to_remove->next_message;
 
-			//Free data
-			free(message_to_remove->message);
-			free(message_to_remove);
+				//Free data
+				free(message_to_remove->message);
+				free(message_to_remove);
 
-			return temp_node_pointer->next_message;
-		} //if()
+				pointer_to_return = temp_node_pointer->next_message;
+				break;
+			} //if()
 
-		temp_node_pointer = temp_node_pointer->next_message;
-	} //while()
+			temp_node_pointer = temp_node_pointer->next_message;
+		} //while()
+	} //if-else
 
-	return NULL;
+	return pointer_to_return;
 } //removeThisMessage()
 
+//Local message queue
 message_queue* lastQueuedMessage() {
 	message_queue* tempMessageQueuePointer = topQueuedMessage;
 
@@ -315,7 +322,11 @@ message_queue* lastQueuedMessage() {
 	return tempMessageQueuePointer;
 } //lastQueuedMessage()
 
+//Exfil message queue
 void addQueuedNode(unsigned int nodeToAdd, char* messageToAdd) {
+
+	/* Critical section -- disable XBeeRX interrupt */
+	UCA0IE &= ~UCRXIE;
 
 	//Create new node
 	exfil_queue* new_node = malloc(sizeof(exfil_queue));
@@ -337,8 +348,16 @@ void addQueuedNode(unsigned int nodeToAdd, char* messageToAdd) {
 	} else {
 		exfilObject.topExfilQueue = new_node;
 	} //if-else()
+
+	new_node->status = EXFIL_REQ_WAIT;
+	//(xbee) tell the node to wait
+	sendMessage(exfilObject.xbee_table[nodeToAdd], NETWORK_EX_REQ_ACK);
+
+	/* END Critical section -- enable XBeeRX interrupt */
+	UCA0IE |= UCRXIE;
 } //addQueuedNode()
 
+//Exfil message queue (assumes already in critical section)
 void removeTopQueuedNode() {
 
 	exfil_queue* temp_exfil_pointer;
@@ -357,37 +376,47 @@ void removeTopQueuedNode() {
 	free(temp_exfil_pointer);
 } //removeTopQueuedNode()
 
+//Exfil message queue
 exfil_queue* removeThisQueuedMessage(exfil_queue* message_to_remove) {
 
+	/* Critical section -- disable XBeeRX interrupt */
+	UCA0IE &= ~UCRXIE;
+
 	exfil_queue* temp_node_pointer = exfilObject.topExfilQueue;
+	exfil_queue* pointer_to_return = NULL;
 
 	//The top message is the message we would like to remove
 	if (exfilObject.topExfilQueue ==  message_to_remove) {
 		removeTopQueuedNode();
-		return exfilObject.topExfilQueue;
-	} //if()
+		pointer_to_return = exfilObject.topExfilQueue;
+	} else {
+		//Should not be the top message at this point
+		while(temp_node_pointer->next_queued_node != NULL) {
 
-	//Should not be the top message at this point
-	while(temp_node_pointer->next_queued_node != NULL) {
+			//Check for a match
+			if (temp_node_pointer->next_queued_node == message_to_remove) {
+				//Redirect next_message pointer
+				temp_node_pointer->next_queued_node = message_to_remove->next_queued_node;
 
-		//Check for a match
-		if (temp_node_pointer->next_queued_node == message_to_remove) {
-			//Redirect next_message pointer
-			temp_node_pointer->next_queued_node = message_to_remove->next_queued_node;
+				//Free data
+				free(message_to_remove->message);
+				free(message_to_remove);
 
-			//Free data
-			free(message_to_remove->message);
-			free(message_to_remove);
+				pointer_to_return = temp_node_pointer->next_queued_node;
+				break;
+			} //if()
 
-			return temp_node_pointer->next_queued_node;
-		} //if()
+			temp_node_pointer = temp_node_pointer->next_queued_node;
+		} //while()
+	} //if-else()
 
-		temp_node_pointer = temp_node_pointer->next_queued_node;
-	} //while()
+	/* END Critical section -- enable XBeeRX interrupt */
+	UCA0IE |= UCRXIE;
 
-	return NULL;
+	return pointer_to_return;
 } //removeThisQueuedMessage
 
+//Exfil message queue (assumes already in critical section)
 exfil_queue* lastQueuedNode() {
 	exfil_queue* tempExfilQueuePointer = exfilObject.topExfilQueue;
 
@@ -454,13 +483,15 @@ __interrupt void Timer_A(void)
 	if (statusReportTimeWait <= INITIAL_STATUS_REPORT_SEC && !initialStatusSent) {
 		statusReportTimeWait++;
 	} else if (!initialStatusSent) {
-		addMessageQueue(STATUS_MESSAGE, "");
+		//TODO: Uncomment these
+		//addMessageQueue(STATUS_MESSAGE, "");
 		initialStatusSent = TRUE;
 		statusReportTimeWait = 0;
 	} else if (statusReportTimeWait <= STATUS_REPORT_INTERVAL) {
 		statusReportTimeWait++;
 	} else {
-		addMessageQueue(STATUS_MESSAGE, "");
+		//TODO: Uncomment these
+		//addMessageQueue(STATUS_MESSAGE, "");
 		statusReportTimeWait = 0;
 	} //if-else()
 

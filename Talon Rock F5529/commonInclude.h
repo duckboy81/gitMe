@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 //Loads code explicit to exfil or sensor node
-#define EXFIL_NODE 0
+#define EXFIL_NODE 1
 
 #ifndef _COMMONINCLUDE_H
 #define	_COMMONINCLUDE_H
@@ -18,7 +18,9 @@
 /* main.c */
 #define EXFIL_XBEE_ADDR 0x0013A20040B2C0D2
 #define MAX_SENSOR_NETWORK_SIZE 100			//Max size of 99,999 nodes
-#define INITIAL_STATUS_REPORT_SEC 30		//Time to wait until sending first status message (in seconds)
+
+//TODO: Reset this initial time to 30 seconds
+#define INITIAL_STATUS_REPORT_SEC 10		//Time to wait until sending first status message (in seconds)
 #define STATUS_REPORT_INTERVAL	1800		//Time between status messages (in seconds)
 
 /* gpsModule.h */
@@ -42,17 +44,17 @@
 
   // NODE -> EXFIL
 #define NETWORK_NODE_REQ "0"		//A node is requesting to send a message
-#define NETWORK_NODE_REQ_INT 48
+#define NETWORK_NODE_REQ_INT 48		//0x30
 
   // EXFIL -> NODE
 #define NETWORK_EX_REQ_ACK "1"	//The exfil is acknowledging the node's request
-#define NETWORK_EX_REQ_ACK_INT 49
+#define NETWORK_EX_REQ_ACK_INT 49	//0x31
 
 #define NETWORK_EX_APPROVAL "2"	//The exfil is providing a node with approval to send a message
-#define NETWORK_EX_APPROVAL_INT 50
+#define NETWORK_EX_APPROVAL_INT 50	//0x32
 
 #define NETWORK_EX_MSG_ACK "3"	//The exfil has successfully received the message
-#define NETWORK_EX_MSG_ACK_INT 51
+#define NETWORK_EX_MSG_ACK_INT 51	//0x33
 
 
 
@@ -103,6 +105,9 @@ typedef struct xbee_object {
 
 enum message_status
 {
+	LOOK_AT_ME,
+	RIGHT_NOW,
+	OKAY_THEN,
   MSG_INITIAL,			//Exfil does not know about message
   MSG_SYN,				//Exfil does not know about message, though we sent a request to it
   MSG_EXFIL_ACK_WAIT,	//Exfil knows about it and is telling us to wait

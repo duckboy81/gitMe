@@ -62,3 +62,9 @@ void main_initialize(void) {
 	initializeGPS();
 
 } //main_initialize()
+
+//Fault interrupt
+#pragma vector=SYSNMI_VECTOR
+__interrupt void FAULT_ISR(void) {
+	__no_operation();
+} //FAULT_ISR()

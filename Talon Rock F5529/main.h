@@ -17,5 +17,6 @@
  * 	-Timer: Manual AFSK bit switch
  */
 void main_initialize(void);
+void FAULT_ISR(void);
 
 #endif /* MAIN_H_ */

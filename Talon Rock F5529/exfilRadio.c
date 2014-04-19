@@ -68,50 +68,75 @@ void handleExfilQueue() {
 		temp_node_pointer->age++;
 
 		//If the radio is not ready, no point in dealing with the other messages
-		if (!isHAMReady()) return;
+		//if (!isHAMReady()) return;
 
 		//Check on first node
 		switch(temp_node_pointer->status) {
 		case EXFIL_REQ_WAIT:
+			//Ham radio not ready, don't do anything
+			if (!isHAMReady()) break;
+
 			//The top node is waiting for approval, the radio is ready, give the node approval!
 			temp_node_pointer->status = EXFIL_ACCEPT_MSG;
 
+			//Reset the age
+			temp_node_pointer->age = 0;
+
 		case EXFIL_ACCEPT_MSG:
+
 			temp_node_pointer->status = EXFIL_ACCEPT_WAIT;
 
-			//(xbee) tell the node it is allowed to send its message
-			sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_APPROVAL);
+			//Make sure we are not sending a message to ourself
+			if (temp_node_pointer->node_number != 0) {
+				//(xbee) tell the node it is allowed to send its message
+				sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_APPROVAL);
+			} //if()
+
+			//Reset the age
+			temp_node_pointer->age = 0;
 			break;
 
 		case EXFIL_ACCEPT_WAIT:
-			//Delete the message after 30 seconds
-			if (temp_node_pointer->age > 30) {
+
+			//Delete the message after 15 seconds
+			if (temp_node_pointer->age > 15) {
 				temp_node_pointer = removeThisQueuedMessage(temp_node_pointer);
 			} //if()
 			break;
 
 		case EXFIL_ACCEPT_ACK:
+			//Ham radio not ready, don't do anything
+			if (!isHAMReady()) return;
 
 			if (sendHAMString(temp_node_pointer->message, temp_node_pointer->node_number)) {
 				temp_node_pointer->status = EXFIL_FIN;
 
-//#if EXFIL_NODE
-				//(xbee) tell the node the message it sent was accepted
-				sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_MSG_ACK);
-//#endif
+				//Make sure we are not sending a message to ourself
+				if (temp_node_pointer->node_number != 0) {
+					//(xbee) tell the node the message it sent was accepted
+					sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_MSG_ACK);
+				} //if()
+
 			} else {
 				//Not successful, delete it
 				exfilObject.topExfilQueue->status = EXFIL_FIN;
 			} //if-else()
+
+			//Reset the age
+			temp_node_pointer->age = 0;
 			break;
 
 		case EXFIL_ACCEPT_ACK_SENT:
 			temp_node_pointer->status = EXFIL_FIN;
 
-//#if EXFIL_NODE
-			//(xbee) tell the node the message it sent was accepted
-			sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_MSG_ACK);
-//#endif
+			//Make sure we are not sending a message to ourself
+			if (temp_node_pointer->node_number != 0) {
+				//(xbee) tell the node the message it sent was accepted
+				sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_MSG_ACK);
+			} //if()
+
+			//Reset the age
+			temp_node_pointer->age = 0;
 			break;
 
 		case EXFIL_FIN:
@@ -121,20 +146,21 @@ void handleExfilQueue() {
 		default: break;
 		} //switch()
 
-		/* Handle the rest of the message */
+		/* Handle all of the message */
 		while(temp_node_pointer != NULL) {
 			switch(temp_node_pointer->status) {
+			/* may not need this case -- except for self messages */
 			case EXFIL_REQ_ACK:
-#if EXFIL_NODE
+
 				if (temp_node_pointer->node_number == 0) {
 					temp_node_pointer->status = EXFIL_ACCEPT_ACK;
 					break;
-				} //if()
-#endif
+				} else {
+					temp_node_pointer->status = EXFIL_REQ_WAIT;
+					//(xbee) tell the node to wait
+					sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_REQ_ACK);
+				} //if-else()
 
-				temp_node_pointer->status = EXFIL_REQ_WAIT;
-				//(xbee) tell the node to wait
-				sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_REQ_ACK);
 				break;
 
 			case EXFIL_REQ_WAIT:

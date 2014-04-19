@@ -59,6 +59,9 @@ char handleGPSData(void) {
 //		if (!token_pointer ||  (*token_pointer != '1' && *token_pointer != '2')) {
 		if (token_pointer &&  (*token_pointer == '1' || *token_pointer == '2')) {
 
+			//Toggle an LED for visual debugging
+			P4OUT ^= BIT7;
+
 			//Copy data into new string (again because the first
 			// strtok cuts up the sring) (this also prevents overwriting
 			// good information with poor information, should the GPS
@@ -150,7 +153,7 @@ void compileGPSToString() {
 		free(gpsPositionString);
 	} //if()
 
-	gpsPositionString = malloc(lengthOfString * sizeof(char) + 7);
+	gpsPositionString = realloc(gpsPositionString, lengthOfString * sizeof(char) + 7);
 
 	//Copy in the data
  	strcpy(gpsPositionString, mainGPS.zuluTime);
@@ -171,6 +174,9 @@ void compileGPSToString() {
 char isGPSFinished() {
 	if (mainGPS.acceptableLockCount > MIN_GPS_LOCK_CYCLES || mainGPS.secLapsed > MAX_GPS_LOCK_TIME) {
 		turnOffGPS();
+
+		//Turn off GPS LED
+		P4OUT &= ~BIT7;
 
 		//Setup GPS output string
 		compileGPSToString();
