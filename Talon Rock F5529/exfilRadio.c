@@ -44,6 +44,7 @@ void initializeExfilRadio() {
 	exfilObject.topExfilQueue = NULL;
 	exfilObject.twiddle_time = 0;
 	exfilObject.ready_to_send = 1;
+	exfilObject.msg_tx_counter = 0;
 
 	//The first entry in the table is always itself
 	exfilObject.xbee_table[0] = EXFIL_XBEE_ADDR;
@@ -84,13 +85,18 @@ void handleExfilQueue() {
 
 		case EXFIL_ACCEPT_MSG:
 
-			temp_node_pointer->status = EXFIL_ACCEPT_WAIT;
-
 			//Make sure we are not sending a message to ourself
 			if (temp_node_pointer->node_number != 0) {
+
+				temp_node_pointer->status = EXFIL_ACCEPT_WAIT;
+
 				//(xbee) tell the node it is allowed to send its message
 				sendMessage(exfilObject.xbee_table[temp_node_pointer->node_number], NETWORK_EX_APPROVAL);
-			} //if()
+			} else {
+
+				//This message is from ourself, go ahead and forward it to the next stage
+				temp_node_pointer->status = EXFIL_ACCEPT_ACK;
+			} //if-else
 
 			//Reset the age
 			temp_node_pointer->age = 0;
@@ -214,7 +220,7 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 	enum baudot_mode currentMode = NONE;
 	enum send_select currentSendMsg = MODULE_ID;
 
-	int i = 0;
+	int i = 0, prefixZerosCounter;
 	unsigned char j = 3; //Starts at two because of FIG_SHIFT and $-sign at the beginning
 	unsigned char currChar, checkSumString[5], moduleIDString[5];
 	unsigned int checkSum;
@@ -261,6 +267,12 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 	while(currentSendMsg != FINISHED) {
 		switch(currentSendMsg) {
 		case MODULE_ID:
+			//Check the first four numbers for leading zeros -- skip them if so
+			for(prefixZerosCounter = 0; prefixZerosCounter<4; prefixZerosCounter++) {
+				if (moduleIDString[prefixZerosCounter] == '0') {
+					i++;
+				} //if()
+			} //for()
 			currChar = moduleIDString[i];
 			break;
 
@@ -271,6 +283,7 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 		case CHECKSUM:
 			if (i == 0) {
 				currChar = '&';
+				i = 3; //This will keep only the last two digits
 			} else {
 				currChar = checkSumString[i - 1];
 			} //if-else
@@ -369,10 +382,6 @@ char sendHAMString(char* stringToSend, unsigned int moduleID) {
 	//Reset twiddle time
 	exfilObject.twiddle_time = 0;
 
-	//Reset baud PWM
-	//TODO: Is this needed?
-	TB0CCTL1 = OUTMOD_7;
-
 	/* Enabling the PTT button is now handled
 	 * by a timer system in the ISR.  This ensures
 	 * the radio has some pause before it transmits
@@ -406,11 +415,11 @@ char isHAMReady() {
 } //isHAMReady()
 
 void enablePTT() {
-	P2OUT &= ~BIT2; //P2.2
+	P2OUT |= BIT2;	//P2.2
 } //enablePTT()
 
 void disablePTT() {
-	P2OUT |= BIT2;	//P2.2
+	P2OUT &= ~BIT2; //P2.2
 } //disablePTT()
 
 //Timer0_B7 CC0
@@ -437,7 +446,13 @@ __interrupt void TA11_ISR(void) {
 		exfilObject.twiddle_time = -1;
 	} //if-else
 
-	if (currByte == '\0') {
+	if (currByte == '\0' && exfilObject.msg_tx_counter < NUM_TIMES_RETRANS_MSG - 1) {
+		exfilObject.msg_tx_counter++;
+		exfilObject.string_position = 0;
+		exfilObject.bit_position = 0;
+		exfilObject.twiddle_time = PRE_MSG_TWIDDLES / 2;
+
+	} else if (currByte == '\0') {
 		exfilObject.ready_to_send = 1;
 
 		disablePTT();
@@ -447,6 +462,9 @@ __interrupt void TA11_ISR(void) {
 
 		//Reset hot mic timer
 		exfilObject.time_since_last_tx = 0;
+
+		//Reset retransmission timer
+		exfilObject.msg_tx_counter = 0;
 
 		//Wake CPU
 		//__bic_SR_register_on_exit(LPM0_bits);

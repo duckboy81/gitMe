@@ -11,11 +11,12 @@ Public Class MainScreen
     Friend Declare Function RegisterWindowMessage Lib "user32.dll" Alias "RegisterWindowMessageA" (ByVal lpString As String) As UInteger
 
     '******CONFIGURATION VARIABLES******'
+    'TODO REPLACE THE CHECKSUM WITH FALSE
     Dim DEBUG_BYPASS_CHECKSUM As Boolean = False
     Dim numChar2ShowUpdate As Integer = 14
     Dim configBaudRate As Integer = 7500 '(Actual Baud rate * 100) = this configuration
-    Dim configMarkFreq As Integer = 2200 'Hz
-    Dim configSpaceFreq As Integer = 2540 'Hz
+    Dim configMarkFreq As Integer = 2195 'Hz
+    Dim configSpaceFreq As Integer = 2533 'Hz
 
     Dim configSquelch As Integer = 0 'TODO
 
@@ -841,7 +842,7 @@ Public Class MainScreen
                             If (incomingDataStart = True) Then
                                 'Checksum of string
                                 If (incomingChar = "&") Then
-                                    incomingDataNumUntilEnd = 6
+                                    incomingDataNumUntilEnd = 3
                                 End If
 
                                 'Add to queue
@@ -936,7 +937,7 @@ Public Class MainScreen
             incomingString = incomingString.Substring(1)
 
             'Determine checksum
-            checksum = CInt(incomingString.Substring(incomingString.LastIndexOf("&") + 1, 5))
+            checksum = Convert.ToInt32(incomingString.Substring(incomingString.LastIndexOf("&") + 1, 2), 16)
             incomingString = incomingString.Substring(0, incomingString.LastIndexOf("&"))
 
             'Determine module id
@@ -968,7 +969,7 @@ Public Class MainScreen
             'checksumCalculated += Asc(message_id)
             checksumCalculated += module_id
 
-            checksumCalculated = &HFFFF And checksumCalculated
+            checksumCalculated = &HFF And checksumCalculated
 
             'Compare both checksums
             If (checksum <> checksumCalculated And Not (DEBUG_BYPASS_CHECKSUM)) Then

@@ -183,7 +183,6 @@ char isGPSFinished() {
 
 		//Send coordinates to EXFIL node * 2
 		addMessageQueue(GPS_MESSAGE, gpsPositionString);
-		addMessageQueue(GPS_MESSAGE, gpsPositionString);
 
 		return TRUE;
 	} //if()

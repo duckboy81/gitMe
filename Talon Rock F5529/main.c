@@ -27,11 +27,17 @@ int main(void) {
 //	addMessageQueue(GPS_MESSAGE, "bell curves for days");
 //	sendMessage(0x0013A20040B2C0D2, "OKAY");
 //	sendMessage(XBEE_BROADCAST_ADDR, "OKAY");
+	sendMessage(EXFIL_XBEE_ADDR, "+");
 
 	//Use a combination of polling and power savings to handle incoming data
 	while(TRUE) {
 		if (isGPSOn()) {
 			handleGPSData();
+		} //if()
+
+		//Just a backup to make sure the PTT does not get stuck on
+		if (exfilObject.ready_to_send) {
+			disablePTT();
 		} //if()
 
 #if !EXFIL_NODE

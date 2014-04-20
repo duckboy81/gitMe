@@ -19,8 +19,7 @@
 #define EXFIL_XBEE_ADDR 0x0013A20040B2C0D2
 #define MAX_SENSOR_NETWORK_SIZE 100			//Max size of 99,999 nodes
 
-//TODO: Reset this initial time to 30 seconds
-#define INITIAL_STATUS_REPORT_SEC 10		//Time to wait until sending first status message (in seconds)
+#define INITIAL_STATUS_REPORT_SEC 15		//Time to wait until sending first status message (in seconds)
 #define STATUS_REPORT_INTERVAL	1800		//Time between status messages (in seconds)
 
 /* gpsModule.h */
@@ -31,9 +30,10 @@
 #define MIN_GPS_LOCK_CYCLES 10		//Max value 65536
 #define MAX_GPS_LOCK_TIME 600 		//(Standard about 600 seconds)
 
-/* radioHAM.h */
+/* exfilRadio.h */
 #define MIN_TIME_BETWEEN_EXFIL_MSGS 5
 #define PRE_MSG_TWIDDLES 40
+#define NUM_TIMES_RETRANS_MSG 2
 
 /* raspberryPI.h */
 #define MIN_RASP_PI_WAIT 60		//Time in seconds
@@ -86,6 +86,7 @@ typedef struct exfil_object {
 	int twiddle_time;
 	char ready_to_send;
 	unsigned char* string_to_send;
+	char msg_tx_counter;
 	int time_since_last_tx;		//Used to make sure radio does not get destroyed from over use
 } exfil_object;
 
@@ -105,9 +106,6 @@ typedef struct xbee_object {
 
 enum message_status
 {
-	LOOK_AT_ME,
-	RIGHT_NOW,
-	OKAY_THEN,
   MSG_INITIAL,			//Exfil does not know about message
   MSG_SYN,				//Exfil does not know about message, though we sent a request to it
   MSG_EXFIL_ACK_WAIT,	//Exfil knows about it and is telling us to wait

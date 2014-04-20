@@ -302,7 +302,7 @@ __interrupt void USCI0RX_ISR(void) {
 			} //if()
 
 			//Copy the message into a buffer
-			exfilObject.topExfilQueue->message = malloc(sizeof(char) * strlen(&xbeeObject.bufferSpace[15]));
+			exfilObject.topExfilQueue->message = malloc(sizeof(char) * (strlen(&xbeeObject.bufferSpace[15]) + 1) );
 			strcpy(exfilObject.topExfilQueue->message, &xbeeObject.bufferSpace[15]);
 
 			exfilObject.topExfilQueue->status = EXFIL_ACCEPT_ACK;

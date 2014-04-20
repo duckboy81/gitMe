@@ -62,7 +62,7 @@ void handleMessageQueue() {
 				break;
 
 			case MSG_SYN:
-				if (current_message->age > 5) {
+				if (current_message->age > 15) {
 					current_message->age = 0;
 
 					//(xbee) send request to exfil UGS
@@ -71,7 +71,7 @@ void handleMessageQueue() {
 				break;
 
 			case MSG_EXFIL_ACK_WAIT:
-				if (current_message->age > 600) {
+				if (current_message->age > 180) {
 					current_message->age = 0;
 					current_message->status = MSG_SYN;
 
@@ -88,10 +88,13 @@ void handleMessageQueue() {
 
 				//Reset the status update timer
 				statusReportTimeWait = 0;
+
+				//Reset message age
+				current_message->age = 0;
 				break;
 
 			case MSG_EXFIL_ACK_REQ:
-				if (current_message->age > 10) {
+				if (current_message->age > 30) {
 					current_message->age = 0;
 					current_message->status = MSG_SYN;
 
@@ -123,12 +126,19 @@ void handleMessageQueue() {
  */
 void charNumberToString(unsigned char numberToConvert, unsigned char outputString[3]) {
 	signed char i;
+	unsigned char currentByte;
 
 	for(i=2; i>=0; i--) {
-		outputString[i] = numberToConvert % 10 + 0x30; //A zero in ASCII is code 0x30
+		currentByte = numberToConvert % 16;
+
+		if (currentByte < 0xA) {
+			outputString[i] = numberToConvert % 16 + 0x30; //A zero in ASCII is code 0x30
+		} else {
+			outputString[i] = numberToConvert % 16 + 0x41 - 10; //An "A" in ASCII is code 0x41
+		} //if-else()
 
 		if (numberToConvert != 0) {
-			numberToConvert = numberToConvert / 10;
+			numberToConvert /= 16;
 		} //if()
 	} //for()
 
@@ -141,12 +151,19 @@ void charNumberToString(unsigned char numberToConvert, unsigned char outputStrin
  */
 void intNumberToString(unsigned int numberToConvert, unsigned char outputString[5]) {
 	signed char i;
+	unsigned char currentByte;
 
 	for(i=4; i>=0; i--) {
-		outputString[i] = numberToConvert % 10 + 0x30; //A zero in ASCII is code 0x30
+		currentByte = numberToConvert % 16;
+
+		if (currentByte < 0xA) {
+			outputString[i] = numberToConvert % 16 + 0x30; //A zero in ASCII is code 0x30
+		} else {
+			outputString[i] = numberToConvert % 16 + 0x41 - 10; //An "A" in ASCII is code 0x41
+		} //if-else()
 
 		if (numberToConvert != 0) {
-			numberToConvert = numberToConvert / 10;
+			numberToConvert /= 16;
 		} //if()
 	} //for()
 
@@ -162,7 +179,7 @@ unsigned int signedStringChecksum(char* stringToChecksum) {
 	} //for()
 
 	//Invert the checksum to prevent an all zero message
-	return ~(checkSum & 99);
+	return ~checkSum;
 } //signedStringChecksum()
 
 unsigned int stringChecksum(unsigned char* stringToChecksum) {
@@ -350,8 +367,11 @@ void addQueuedNode(unsigned int nodeToAdd, char* messageToAdd) {
 	} //if-else()
 
 	new_node->status = EXFIL_REQ_WAIT;
-	//(xbee) tell the node to wait
-	sendMessage(exfilObject.xbee_table[nodeToAdd], NETWORK_EX_REQ_ACK);
+
+	if (nodeToAdd != 0) {
+		//(xbee) tell the node to wait
+		sendMessage(exfilObject.xbee_table[nodeToAdd], NETWORK_EX_REQ_ACK);
+	} //if()
 
 	/* END Critical section -- enable XBeeRX interrupt */
 	UCA0IE |= UCRXIE;
@@ -483,15 +503,13 @@ __interrupt void Timer_A(void)
 	if (statusReportTimeWait <= INITIAL_STATUS_REPORT_SEC && !initialStatusSent) {
 		statusReportTimeWait++;
 	} else if (!initialStatusSent) {
-		//TODO: Uncomment these
-		//addMessageQueue(STATUS_MESSAGE, "");
+		addMessageQueue(STATUS_MESSAGE, "");
 		initialStatusSent = TRUE;
 		statusReportTimeWait = 0;
 	} else if (statusReportTimeWait <= STATUS_REPORT_INTERVAL) {
 		statusReportTimeWait++;
 	} else {
-		//TODO: Uncomment these
-		//addMessageQueue(STATUS_MESSAGE, "");
+		addMessageQueue(STATUS_MESSAGE, "");
 		statusReportTimeWait = 0;
 	} //if-else()
 
