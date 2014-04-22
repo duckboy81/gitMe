@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 //Loads code explicit to exfil or sensor node
-#define EXFIL_NODE 1
+#define EXFIL_NODE 0
 
 #ifndef _COMMONINCLUDE_H
 #define	_COMMONINCLUDE_H
@@ -38,6 +38,13 @@
 /* raspberryPI.h */
 #define MIN_RASP_PI_WAIT 60		//Time in seconds
 #define MIN_RASP_PI_WAIT_BETWEEN_DETECTIONS	20 //Time in seconds
+
+#define MIN_RASP_PI_HITS_IN_TIME 2
+#define MAX_RASP_PI_TIME_BETWEEN_HITS 4 //In seconds
+//The above two definitions say that at least 2
+//	hits must occur within 4 seconds to make a
+//	valid detection.
+
 
 /* XBeeModule.h */
 #define MAX_XBEE_BUFFER_LEN 100

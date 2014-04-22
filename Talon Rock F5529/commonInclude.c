@@ -493,6 +493,11 @@ __interrupt void Timer_A(void)
 	if (raspberryPISensorTripTimer <= MIN_RASP_PI_WAIT_BETWEEN_DETECTIONS) {
 		raspberryPISensorTripTimer++;
 	} //if()
+
+	if (raspberryPITimeSinceHit <= MAX_RASP_PI_TIME_BETWEEN_HITS) {
+		raspberryPITimeSinceHit++;
+	} //if()
+
 #else
 	if (exfilObject.time_since_last_tx != -1 && exfilObject.time_since_last_tx <= MIN_TIME_BETWEEN_EXFIL_MSGS) {
 		exfilObject.time_since_last_tx++;
