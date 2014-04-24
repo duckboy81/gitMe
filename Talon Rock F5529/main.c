@@ -12,10 +12,18 @@
 #include "XBeeModule.h"
 #include "exfilRadio.h"
 
+//WDTPW		-- Just the PW for configuring the WDT
+//WDTSSEL0  -- sets WDT timer clock source to ACLK
+//WDTCNTCL	-- Resets the WDT counter
+//WDTIS0 + WDTIS1	-- Sets the interval select to (WDT CLK)/(2^19) 3.4375*16seconds
+//WDTIS2	-- Sets the interval select to (WDT CLK)/(2^15) ~3.4375*1 seconds
+
+#define WDT_FEED WDTPW + WDTSSEL0 + WDTCNTCL + WDTIS0 + WDTIS1 //Safer option, approx 60 sec WDT
+//#define WDT_FEED WDTPW + WDTSSEL0 + WDTCNTCL + WDTIS2
+
 int _system_pre_init(void) {
 
-  WDTCTL = WDTPW + WDTHOLD;	//Disable watchdog timer
-
+  WDTCTL = WDT_FEED + WDTHOLD;	//Configure and hold watchdog timer
   return 1;
 
 } //_system_pre_init
@@ -27,17 +35,14 @@ int main(void) {
 //	addMessageQueue(GPS_MESSAGE, "bell curves for days");
 //	sendMessage(0x0013A20040B2C0D2, "OKAY");
 //	sendMessage(XBEE_BROADCAST_ADDR, "OKAY");
-	sendMessage(EXFIL_XBEE_ADDR, "+");
+//	sendMessage(EXFIL_XBEE_ADDR, "+");
 
 	//Use a combination of polling and power savings to handle incoming data
 	while(TRUE) {
+		WDTCTL = WDT_FEED; //Feed the dog
+
 		if (isGPSOn()) {
 			handleGPSData();
-		} //if()
-
-		//Just a backup to make sure the PTT does not get stuck on
-		if (exfilObject.ready_to_send) {
-			disablePTT();
 		} //if()
 
 #if !EXFIL_NODE
@@ -48,6 +53,12 @@ int main(void) {
 		handleMessageQueue();
 
 #if EXFIL_NODE
+
+		//Just a backup to make sure the PTT does not get stuck on
+		if (exfilObject.ready_to_send) {
+			disablePTT();
+		} //if()
+
 		//Handle nodes in queue -- exfilRadio
 		handleExfilQueue();
 #endif

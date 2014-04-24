@@ -2,11 +2,17 @@
  * XBeeModule.h
  *
  *  Created on: Mar 19, 2014
- *      Author: Bryan Aragon
+ *      Author: Bryan Aragon / Jean-Luc Duckworth
  */
 
 #ifndef XBEEMODULE_H_
 #define XBEEMODULE_H_
+
+/* XBEE NETWORK INFORMATION:
+ * 	This code will program the attached XBEE to
+ * 	use a PREAMBLE ID of 0x04 and a NETWORK ID
+ * 	of 0x2014.
+ */
 
 /* Definitions */
 #define XBEE_START_DELIMITER 0x7E
@@ -18,6 +24,13 @@
 //Frame Types
 #define TX_REQUEST 0x10
 #define RX_INDICATOR 0x90
+#define AT_CMD_RESPONSE 0x88
+
+//AT Command types
+#define ATCMD_HP 0x4850
+#define ATCMD_ID 0x4944
+#define ATCMD_WR 0x5752
+#define ATCMD_AC 0x4143
 
 //Data Starts for each Frame Type
 #define RX_DATASTART 15 //Data starts at byte 15 for rx indicator frames

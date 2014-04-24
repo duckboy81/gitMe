@@ -26,8 +26,7 @@
 	//With an update rate of 1 data update per second, the below
 	//	definition will require the GPS to have XX seconds of good GPS locks
 	//	(greater than three satellites) before it reports the GPS info out.
-//TODO: Up min cycles to 60
-#define MIN_GPS_LOCK_CYCLES 10		//Max value 65536
+#define MIN_GPS_LOCK_CYCLES 60		//Max value 65536 (Standard ~60 sec)
 #define MAX_GPS_LOCK_TIME 600 		//(Standard about 600 seconds)
 
 /* exfilRadio.h */
@@ -149,8 +148,7 @@ extern message_queue* topQueuedMessage;
 extern unsigned int raspberryPISec;
 extern unsigned int raspberryPIEnabled;
 extern unsigned int raspberryPISensorTripTimer;
-
-
+extern unsigned int raspberryPITimeSinceHit;
 
 /* Define Functions */
 void initRealTimeClock(void);

@@ -41,6 +41,18 @@ void initXbee() {
 
 	UCA0IE|=UCRXIE; //Enable RX interrupt
 	UCA0IFG &= ~UCRXIFG; // Clear flag
+
+	//Initialize network information
+	sendByte(0x7E);
+	sendByte(0x00);
+	sendByte(0x05);
+	sendByte(0x09);
+	sendByte(0xB5);
+	sendByte(0x48);
+	sendByte(0x50);
+	sendByte(0x04);
+	sendByte(0xA5);
+
 } //initXbee()
 
 /**
@@ -244,13 +256,117 @@ __interrupt void USCI0RX_ISR(void) {
 		//Check for invalid checksum
 		if (checksumHolder != 0x00FF) return;
 
-		//Terminate the buffer (eliminates the checksum from the buffer in the process)
-		xbeeObject.bufferSpace[xbeeObject.xbeeMessageLength + 3] = '\0';
-
 		xbeeObject.xbeeFrameType = xbeeObject.bufferSpace[3]; //Frame 3: Frame Type
 
-		//Check to see if it is a response message and not some configuration message
-		if (xbeeObject.xbeeFrameType != RX_INDICATOR) return;
+		/* CAUTION -- SIGNIFICANT IN-LINE/NON-OPTIMAL CODE FOR NEXT BLOCK OF CODE */
+
+		//Handle any configuration messages
+		if(xbeeObject.xbeeFrameType == AT_CMD_RESPONSE) {
+			//Filter out response types
+			if ((xbeeObject.bufferSpace[5] << 8) + xbeeObject.bufferSpace[6] == ATCMD_HP) {
+				//Response with Preamble ID  -- check to see if it's okay
+				if (xbeeObject.bufferSpace[7] == 0x00) { //status OK
+					//Okay, now send the next configuration for the Network ID
+					/* Initialize network information #2 */
+					sendByte(0x7E);
+					sendByte(0x00);
+					sendByte(0x06);
+					sendByte(0x09);
+					sendByte(0xB6);
+					sendByte(0x49);
+					sendByte(0x44);
+					sendByte(0x20);
+					sendByte(0x14);
+					sendByte(0x7F);
+				} else {
+					//Try sending the configuration message again
+					/* Initialize network information */
+					sendByte(0x7E);
+					sendByte(0x00);
+					sendByte(0x05);
+					sendByte(0x09);
+					sendByte(0xB5);
+					sendByte(0x48);
+					sendByte(0x50);
+					sendByte(0x04);
+					sendByte(0xA5);
+				} //if-else()
+
+			} else if((xbeeObject.bufferSpace[5] << 8) + xbeeObject.bufferSpace[6] == ATCMD_ID) {
+				//Response with Network ID -- check to see if it's okay
+				if (xbeeObject.bufferSpace[7] == 0x00) { //status OK
+					//Okay, now send the write command
+					sendByte(0x7E);
+					sendByte(0x00);
+					sendByte(0x04);
+					sendByte(0x09);
+					sendByte(0xB7);
+					sendByte(0x57);
+					sendByte(0x52);
+					sendByte(0x96);
+				} else {
+					//Try sending the configuration message again
+					/* Initialize network information #2 */
+					sendByte(0x7E);
+					sendByte(0x00);
+					sendByte(0x06);
+					sendByte(0x09);
+					sendByte(0xB6);
+					sendByte(0x49);
+					sendByte(0x44);
+					sendByte(0x20);
+					sendByte(0x14);
+					sendByte(0x7F);
+				} //if-else()
+
+			} else if((xbeeObject.bufferSpace[5] << 8) + xbeeObject.bufferSpace[6] == ATCMD_WR) {
+				//Response with WR status -- check to see if it's okay
+				if (xbeeObject.bufferSpace[7] == 0x00) { //status OK
+					//Okay, now send the apply changes command
+					sendByte(0x7E);
+					sendByte(0x00);
+					sendByte(0x04);
+					sendByte(0x09);
+					sendByte(0xB8);
+					sendByte(0x41);
+					sendByte(0x43);
+					sendByte(0xBA);
+				} else {
+					//Try sending the write configuration message again
+					sendByte(0x7E);
+					sendByte(0x00);
+					sendByte(0x04);
+					sendByte(0x09);
+					sendByte(0xB7);
+					sendByte(0x57);
+					sendByte(0x52);
+					sendByte(0x96);
+				} //if-else()
+			} else if((xbeeObject.bufferSpace[5] << 8) + xbeeObject.bufferSpace[6] == ATCMD_AC) {
+				//Response with AC status -- check to see if it's okay
+				if (xbeeObject.bufferSpace[7] != 0x00) { //status not OK
+					//Try sending the apply changes configuration message again
+					sendByte(0x7E);
+					sendByte(0x00);
+					sendByte(0x04);
+					sendByte(0x09);
+					sendByte(0xB8);
+					sendByte(0x41);
+					sendByte(0x43);
+					sendByte(0xBA);
+				} //if-else()
+			} //if-else()
+
+			return;
+		} else if (xbeeObject.xbeeFrameType != RX_INDICATOR) {
+			//Not a configuration message and not a typical data message -- exit
+			return;
+		} //if-else()
+
+		/* END IN-LINE CODING EYE SORE */
+
+		//Terminate the buffer (eliminates the checksum from the buffer in the process)
+		xbeeObject.bufferSpace[xbeeObject.xbeeMessageLength + 3] = '\0';
 
 		xbeeObject.xbeeSenderAddr = xbeeObject.bufferSpace[4];
 		xbeeObject.xbeeSenderAddr <<= 8;
